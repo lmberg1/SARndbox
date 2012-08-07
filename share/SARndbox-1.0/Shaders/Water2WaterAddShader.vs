@@ -1,6 +1,6 @@
 /***********************************************************************
-Config - Configuration header file for the Augmented Reality Sandbox.
-Copyright (c) 2014-2016 Oliver Kreylos
+Water2WaterAddShader - Shader to render water-adding objects.
+Copyright (c) 2012 Oliver Kreylos
 
 This file is part of the Augmented Reality Sandbox (SARndbox).
 
@@ -19,15 +19,17 @@ with the Augmented Reality Sandbox; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ***********************************************************************/
 
-#ifndef CONFIG_INCLUDED
-#define CONFIG_INCLUDED
+uniform float stepSize;
 
-#define CONFIG_CONFIGDIR "/usr/local/etc/SARndbox-3.0"
-#define CONFIG_SHADERDIR "/usr/local/share/SARndbox-3.0/Shaders"
+attribute float waterAmount;
 
-#define CONFIG_DEFAULTCONFIGFILENAME "SARndbox.cfg"
-#define CONFIG_DEFAULTBOXLAYOUTFILENAME "BoxLayout.txt"
-#define CONFIG_DEFAULTPROJECTIONMATRIXFILENAME "ProjectorMatrix.dat"
-#define CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME "HeightColorMap.cpt"
+varying float scaledWaterAmount;
 
-#endif
+void main()
+	{
+	/* Use the vertex attribute and the step size uniform to calculate the amount of water to add/remove: */
+	scaledWaterAmount=waterAmount*stepSize;
+	
+	/* Use the standard vertex transform: */
+	gl_Position=ftransform();
+	}
