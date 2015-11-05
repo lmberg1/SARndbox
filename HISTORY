@@ -38,3 +38,20 @@ SARndbox-1.5-001:
 - Added hysteresis option to input filter to further remove jitter in
   the reconstructed surface. Triggered by -he <hysteresis envelope>
   command line option.
+
+SARndbox-1.6:
+- Bumped Vrui version requirement to Vrui-3.1-004.
+- Bumped Kinect version requirement to Kinect-2.8.
+- Added tool class to pause/unpause topography updates.
+- Added water simulation control dialog to change water speed, number of
+  simulation steps, and water velocity attenuation dynamically.
+- Added links to tutorial videos to README.
+- Adapted instructions in README to improved calibration procedure and
+  added notes about new full-screen toggle key combination (Win+f).
+- Added command pipe to override some configuration values from outside
+  of running SARndbox process; pipe name passed by -cp <pipe name>
+  command line option. Current commands:
+  - waterSpeed <speed>
+  - waterMaxSteps <max steps>
+  - waterAttenuation <attenuation>
+  - colorMap <color map name>

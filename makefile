@@ -44,7 +44,7 @@ INSTALLDIR := $(shell pwd)
 # clobbering each other. The value should be identical to the
 # major.minor version number found in VERSION in the root package
 # directory.
-VERSION = 1.5
+VERSION = 1.6
 
 # Set up resource directories: */
 CONFIGDIR = etc/SARndbox-$(VERSION)
