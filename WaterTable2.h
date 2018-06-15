@@ -148,6 +148,10 @@ class WaterTable2:public GLObject
 		{
 		return attenuation;
 		}
+	GLfloat getBaseWaterLevel(void) const // Returns the attenuation factor for partial discharges
+		{
+		return baseWaterLevel;
+		}
 	bool getDryBoundary(void) const // Returns true if dry boundaries are enforced after every simulation step
 		{
 		return dryBoundary;

@@ -155,6 +155,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	GLMotif::TextFieldSlider* waterMaxStepsSlider;
 	GLMotif::TextField* frameRateTextField;
 	GLMotif::TextFieldSlider* waterAttenuationSlider;
+	GLMotif::TextFieldSlider* baseWaterLevelSlider;
 	int controlPipeFd; // File descriptor of an optional named pipe to send control commands to a running AR Sandbox
 	
 	/* Private methods: */
@@ -167,6 +168,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	void waterSpeedSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterMaxStepsSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
 	
