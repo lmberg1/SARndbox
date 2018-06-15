@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 uniform sampler2DRect oldBathymetrySampler;
 uniform sampler2DRect newBathymetrySampler;
 uniform sampler2DRect quantitySampler;
+uniform float baseWaterLevel;
 
 void main()
 	{
@@ -42,5 +43,11 @@ void main()
 	vec3 q=texture2DRect(quantitySampler,gl_FragCoord.xy).rgb;
 	
 	/* Update the water surface height: */
+	# if 0
 	gl_FragColor=vec4(max(q.x-bOld,0.0)+bNew,q.yz,0.0);
+	# else
+	float height = max(q.x-bOld, 0.0)+bNew;
+	float xVal = max(height, baseWaterLevel);
+	gl_FragColor=vec4(xVal,q.yz,0.0);
+	#endif
 	}

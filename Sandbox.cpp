@@ -585,6 +585,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
+	double baseWaterLevel = 0.0f;
 	
 	/* Process command line parameters: */
 	bool printHelp=false;
@@ -917,6 +918,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
 		waterTable->setWaterDeposit(evaporationRate);
+		waterTable->setBaseWaterLevel(baseWaterLevel);
 		
 		/* Register a render function with the water table: */
 		addWaterFunction=Misc::createFunctionCall(this,&Sandbox::addWater);
@@ -1207,7 +1209,7 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
-		#else
+		//#else
 		if(totalTimeStep>1.0e-8f)
 			std::cout<<"Ran out of time by "<<totalTimeStep<<std::endl;
 		#endif

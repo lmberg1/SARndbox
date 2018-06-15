@@ -319,6 +319,9 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	epsilon=0.01f*Math::max(Math::max(cellSize[0],cellSize[1]),1.0f);
 	attenuation=127.0f/128.0f; // 31.0f/32.0f;
 	maxStepSize=1.0f;
+
+	/* Initialize the base water level */
+	baseWaterLevel=0.0f;
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
@@ -376,6 +379,9 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	epsilon=0.01f*Math::max(Math::max(cellSize[0],cellSize[1]),1.0f);
 	attenuation=127.0f/128.0f; // 31.0f/32.0f;
 	maxStepSize=1.0f;
+
+	/* Initialize the base water level */
+	baseWaterLevel=0.0f;
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
@@ -552,6 +558,7 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->bathymetryShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->bathymetryShader,"oldBathymetrySampler");
 	dataItem->bathymetryShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->bathymetryShader,"newBathymetrySampler");
 	dataItem->bathymetryShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->bathymetryShader,"quantitySampler");
+	dataItem->bathymetryShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->bathymetryShader,"baseWaterLevel");
 	}
 	
 	/* Create the water adaptation shader: */
@@ -673,6 +680,11 @@ void WaterTable2::setMaxStepSize(GLfloat newMaxStepSize)
 	maxStepSize=newMaxStepSize;
 	}
 
+void WaterTable2::setBaseWaterLevel(GLfloat newBaseWaterLevel)
+	{
+	baseWaterLevel=newBaseWaterLevel;
+	}
+
 void WaterTable2::addRenderFunction(const AddWaterFunction* newRenderFunction)
 	{
 	/* Store the new render function: */
@@ -753,6 +765,8 @@ void WaterTable2::updateBathymetry(GLContextData& contextData) const
 		glActiveTextureARB(GL_TEXTURE2_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
 		glUniform1iARB(dataItem->bathymetryShaderUniformLocations[2],2);
+
+		glUniformARB(dataItem->bathymetryShaderUniformLocations[3],baseWaterLevel);
 		
 		/* Run the bathymetry update: */
 		glBegin(GL_QUADS);
