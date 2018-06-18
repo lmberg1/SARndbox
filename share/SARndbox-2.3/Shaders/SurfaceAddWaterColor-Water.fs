@@ -1,5 +1,5 @@
 /***********************************************************************
-SurfaceAddWaterColor-Snow.fs
+SurfaceAddWaterColor-Water.fs
 
 rfaceAddWaterColor - Shader fragment to modify the base color of a
 surface if the current fragment is under water.
@@ -169,24 +169,24 @@ void addWaterColor(in vec2 fragCoord,inout vec4 baseColor)
 		{
 		/* Calculate the water color: */
 		// float colorW=max(snoise(vec3(fragCoord*0.05,waterAnimationTime*0.25)),0.0); // Simple noise function
-		float colorW=max(turb(vec3(fragCoord*0.05,waterAnimationTime*0.25)),0.0); // Turbulence noise
+		// float colorW=max(turb(vec3(fragCoord*0.05,waterAnimationTime*0.25)),0.0); // Turbulence noise
 		
 		vec3 wn=normalize(vec3((texture2DRect(quantitySampler,vec2(waterTexCoord.x-1.0,waterTexCoord.y)).r-
 		                        texture2DRect(quantitySampler,vec2(waterTexCoord.x+1.0,waterTexCoord.y)).r)*waterCellSize.y,
 		                       (texture2DRect(quantitySampler,vec2(waterTexCoord.x,waterTexCoord.y-1.0)).r-
 		                        texture2DRect(quantitySampler,vec2(waterTexCoord.x,waterTexCoord.y+1.0)).r)*waterCellSize.x,
 		                       2.0*waterCellSize.x*waterCellSize.y));
-		// float colorW=pow(dot(wn,normalize(vec3(0.075,0.075,1.0))),100.0)*1.0-0.0;
+		float colorW=pow(dot(wn,normalize(vec3(0.075,0.075,1.0))),100.0)*1.0-0.0;
 		
-		//vec4 waterColor=vec4(colorW,colorW,1.0,1.0); // Water
+		vec4 waterColor=vec4(colorW,colorW,1.0,1.0); // Water
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*2.0,0.0,1.0); // Lava
-		//vec4 waterColor=vec4(0.0,0.0,1.0,1.0); // Blue
+		// vec4 waterColor=vec4(0.0,0.0,1.0,1.0); // Blue
 		//vec4 waterColor=vec4(0.2,1.0,0.2,1.0); // Toxic waste
 		//vec4 waterColor=vec4(2.0,2.0,1.0,1.0); // Smooth White or snow
-		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*0.2,1.0,1.0); // Sparkly Ice
 		//vec4 waterColor=vec4(1.0-colorW,0.2-colorW*0.2,1.0,1.0); // Polluted Water
-		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Deat
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Death
 		
 		/* Mix the water color with the base surface color based on the water level: */
 		baseColor=mix(baseColor,waterColor,min(waterLevel*waterOpacity,1.0));
@@ -216,15 +216,15 @@ void addWaterColorAdvected(inout vec4 baseColor)
 		//                                0.0025));
 		//float colorW=1.0-pow(noiseNormal.z,2.0);
 		
-		// vec4 waterColor=vec4(colorW,colorW,1.0,1.0); // Water
+		vec4 waterColor=vec4(colorW,colorW,1.0,1.0); // Water
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*2.0,0.0,1.0); // Lava
 		// vec4 waterColor=vec4(0.0,0.0,1.0,1.0); // Blue
 		//vec4 waterColor=vec4(0.2,1.0,0.2,1.0); // Toxic waste
 		//vec4 waterColor=vec4(2.0,2.0,1.0,1.0); // Smooth White or snow
-		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*0.2,1.0,1.0); // Sparkly Ice
 		//vec4 waterColor=vec4(1.0-colorW,0.2-colorW*0.2,1.0,1.0); // Polluted Water
-		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Deat
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Death
 		
 		/* Mix the water color with the base surface color based on the water level: */
 		baseColor=mix(baseColor,waterColor,min(waterLevelTex.b*waterOpacity,1.0));

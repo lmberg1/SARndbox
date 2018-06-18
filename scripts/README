@@ -1,0 +1,5 @@
+To use scripts:
+	change directory variables in the scripts to reflect the correct directory 
+structure
+	copy etc/SARndbox-2.3/SARndbox.cfg into the SARndbox.cfg file in 
+~/.config/Vrui-x.x/Applications/

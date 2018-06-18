@@ -1074,6 +1074,10 @@ void Sandbox::frame(void)
 	/* Update all surface renderers: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		rsIt->surfaceRenderer->setAnimationTime(Vrui::getApplicationTime());
+
+	/* Update all height color maps: */
+	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+	        if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
 	
 	/* Check if there is a control command on the control pipe: */
 	if(controlPipeFd>=0)
@@ -1207,7 +1211,7 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
-		#else
+		\\#else
 		if(totalTimeStep>1.0e-8f)
 			std::cout<<"Ran out of time by "<<totalTimeStep<<std::endl;
 		#endif

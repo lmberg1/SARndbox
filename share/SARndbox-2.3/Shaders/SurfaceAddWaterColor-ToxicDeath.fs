@@ -183,10 +183,10 @@ void addWaterColor(in vec2 fragCoord,inout vec4 baseColor)
 		//vec4 waterColor=vec4(0.0,0.0,1.0,1.0); // Blue
 		//vec4 waterColor=vec4(0.2,1.0,0.2,1.0); // Toxic waste
 		//vec4 waterColor=vec4(2.0,2.0,1.0,1.0); // Smooth White or snow
-		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*0.2,1.0,1.0); // Sparkly Ice
 		//vec4 waterColor=vec4(1.0-colorW,0.2-colorW*0.2,1.0,1.0); // Polluted Water
-		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Deat
+		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Death
 		
 		/* Mix the water color with the base surface color based on the water level: */
 		baseColor=mix(baseColor,waterColor,min(waterLevel*waterOpacity,1.0));
@@ -221,10 +221,10 @@ void addWaterColorAdvected(inout vec4 baseColor)
 		// vec4 waterColor=vec4(0.0,0.0,1.0,1.0); // Blue
 		//vec4 waterColor=vec4(0.2,1.0,0.2,1.0); // Toxic waste
 		//vec4 waterColor=vec4(2.0,2.0,1.0,1.0); // Smooth White or snow
-		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
+		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*0.2,1.0,1.0); // Ice
 		//vec4 waterColor=vec4(1.0-colorW,1.0-colorW*0.2,1.0,1.0); // Sparkly Ice
 		//vec4 waterColor=vec4(1.0-colorW,0.2-colorW*0.2,1.0,1.0); // Polluted Water
-		//vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Deat
+		vec4 waterColor=vec4(0.2-colorW,1.0-colorW*2.0,0.2,1.0); // Toxic Death
 		
 		/* Mix the water color with the base surface color based on the water level: */
 		baseColor=mix(baseColor,waterColor,min(waterLevelTex.b*waterOpacity,1.0));
