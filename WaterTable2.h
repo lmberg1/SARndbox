@@ -67,7 +67,7 @@ class WaterTable2:public GLObject
 		GLuint integrationFramebufferObject; // Frame buffer used for the Euler and Runge-Kutta integration steps
 		GLuint waterFramebufferObject; // Frame buffer used for the water rendering step
 		GLhandleARB bathymetryShader; // Shader to update cell-centered conserved quantities after a change to the bathymetry grid
-		GLint bathymetryShaderUniformLocations[3];
+		GLint bathymetryShaderUniformLocations[4];
 		GLhandleARB waterAdaptShader; // Shader to adapt a new conserved quantity grid to the current bathymetry grid
 		GLint waterAdaptShaderUniformLocations[2];
 		GLhandleARB derivativeShader; // Shader to compute face-centered partial fluxes and cell-centered temporal derivatives
@@ -108,6 +108,7 @@ class WaterTable2:public GLObject
 	GLfloat waterTextureTransformMatrix[16]; // Same in GLSL-compatible format
 	std::vector<const AddWaterFunction*> renderFunctions; // A list of functions that are called after each water flow simulation step to locally add or remove water from the water table
 	GLfloat waterDeposit; // A fixed amount of water added at every iteration of the flow simulation, for evaporation etc.
+	GLfloat baseWaterLevel; // Base water level relative to the base plane
 	bool dryBoundary; // Flag whether to enforce dry boundary conditions at the end of each simulation step
 	unsigned int readBathymetryRequest; // Request token to read back the current bathymetry grid from the GPU
 	mutable GLfloat* readBathymetryBuffer; // Buffer into which to read the current bathymetry grid
@@ -147,6 +148,10 @@ class WaterTable2:public GLObject
 		{
 		return attenuation;
 		}
+	GLfloat getBaseWaterLevel(void) const // Returns the attenuation factor for partial discharges
+		{
+		return baseWaterLevel;
+		}
 	bool getDryBoundary(void) const // Returns true if dry boundaries are enforced after every simulation step
 		{
 		return dryBoundary;
@@ -154,6 +159,7 @@ class WaterTable2:public GLObject
 	void setElevationRange(Scalar newMin,Scalar newMax); // Sets the range of possible elevations in the water table
 	void setAttenuation(GLfloat newAttenuation); // Sets the attenuation factor for partial discharges
 	void setMaxStepSize(GLfloat newMaxStepSize); // Sets the maximum step size for all subsequent integration steps
+	void setBaseWaterLevel(GLfloat newBaseWaterLevel); // Sets the base water level
 	const PTransform& getWaterTextureTransform(void) const // Returns the matrix transforming from camera space into water texture space
 		{
 		return waterTextureTransform;

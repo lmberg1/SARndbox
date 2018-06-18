@@ -339,6 +339,11 @@ void Sandbox::waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChan
 	waterTable->setAttenuation(GLfloat(1.0-cbData->value));
 	}
 
+void Sandbox::baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
+	{
+	waterTable->setBaseWaterLevel(GLfloat(cbData->value));
+	}
+
 GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 	{
 	/* Create a popup shell to hold the main menu: */
@@ -429,6 +434,17 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	waterAttenuationSlider->getSlider()->addNotch(Math::log10(1.0-double(waterTable->getAttenuation())));
 	waterAttenuationSlider->setValue(1.0-double(waterTable->getAttenuation()));
 	waterAttenuationSlider->getValueChangedCallbacks().add(this,&Sandbox::waterAttenuationSliderCallback);
+
+	new GLMotif::Label("BaseWaterLevelLabel",waterControlDialog,"Base Water Level");
+	
+	baseWaterLevelSlider=new GLMotif::TextFieldSlider("BaseWaterLevelSlider",waterControlDialog,8,ss.fontHeight*10.0f);
+	baseWaterLevelSlider->getTextField()->setFieldWidth(7);
+	baseWaterLevelSlider->getTextField()->setPrecision(4);
+	baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+	baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
+	baseWaterLevelSlider->getSlider()->addNotch(double(waterTable->getBaseWaterLevel()));
+	baseWaterLevelSlider->setValue(double(waterTable->getBaseWaterLevel()));
+	baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
 	
 	waterControlDialog->manageChild();
 	
@@ -549,7 +565,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	 sun(0),
 	 activeDem(0),
 	 mainMenu(0),pauseUpdatesToggle(0),waterControlDialog(0),
-	 waterSpeedSlider(0),waterMaxStepsSlider(0),frameRateTextField(0),waterAttenuationSlider(0),
+	 waterSpeedSlider(0),waterMaxStepsSlider(0),frameRateTextField(0),waterAttenuationSlider(0), 
+	 baseWaterLevelSlider(0),
 	 controlPipeFd(-1)
 	{
 	/* Read the sandbox's default configuration parameters: */
@@ -1211,7 +1228,7 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
-		\\#else
+		//#else
 		if(totalTimeStep>1.0e-8f)
 			std::cout<<"Ran out of time by "<<totalTimeStep<<std::endl;
 		#endif
