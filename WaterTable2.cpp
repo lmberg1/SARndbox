@@ -319,12 +319,10 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	epsilon=0.01f*Math::max(Math::max(cellSize[0],cellSize[1]),1.0f);
 	attenuation=127.0f/128.0f; // 31.0f/32.0f;
 	maxStepSize=1.0f;
-
-	/* Initialize the base water level */
-	baseWaterLevel=0.0f;
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
+	earthquakeStepCount = 0;
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* sDepthImageRenderer,const Point basePlaneCorners[4])
@@ -379,12 +377,10 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	epsilon=0.01f*Math::max(Math::max(cellSize[0],cellSize[1]),1.0f);
 	attenuation=127.0f/128.0f; // 31.0f/32.0f;
 	maxStepSize=1.0f;
-
-	/* Initialize the base water level */
-	baseWaterLevel=0.0f;
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
+	earthquakeStepCount = 0;
 	}
 
 WaterTable2::~WaterTable2(void)
@@ -559,6 +555,7 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->bathymetryShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->bathymetryShader,"newBathymetrySampler");
 	dataItem->bathymetryShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->bathymetryShader,"quantitySampler");
 	dataItem->bathymetryShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->bathymetryShader,"baseWaterLevel");
+	dataItem->bathymetryShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->bathymetryShader,"oldBaseWaterLevel");
 	}
 	
 	/* Create the water adaptation shader: */
@@ -657,6 +654,7 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->waterShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->waterShader,"bathymetrySampler");
 	dataItem->waterShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->waterShader,"quantitySampler");
 	dataItem->waterShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->waterShader,"waterSampler");
+	dataItem->waterShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->waterShader,"baseWaterLevel");
 	}
 	}
 
@@ -682,6 +680,7 @@ void WaterTable2::setMaxStepSize(GLfloat newMaxStepSize)
 
 void WaterTable2::setBaseWaterLevel(GLfloat newBaseWaterLevel)
 	{
+	oldBaseWaterLevel=baseWaterLevel;
 	baseWaterLevel=newBaseWaterLevel;
 	}
 
@@ -767,6 +766,7 @@ void WaterTable2::updateBathymetry(GLContextData& contextData) const
 		glUniform1iARB(dataItem->bathymetryShaderUniformLocations[2],2);
 
 		glUniformARB(dataItem->bathymetryShaderUniformLocations[3],baseWaterLevel);
+		glUniformARB(dataItem->bathymetryShaderUniformLocations[4],oldBaseWaterLevel);
 		
 		/* Run the bathymetry update: */
 		glBegin(GL_QUADS);

@@ -68,6 +68,7 @@ class WaterTable2;
 class HandExtractor;
 typedef Misc::FunctionCall<GLContextData&> AddWaterFunction;
 class WaterRenderer;
+class EarthquakeManager;
 
 class Sandbox:public Vrui::Application,public GLObject
 	{
@@ -136,6 +137,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	ONTransform boxTransform; // Transformation from camera space to baseplane space (x along long sandbox axis, z up)
 	Box bbox; // Bounding box around the surface
 	WaterTable2* waterTable; // Water flow simulation object
+	EarthquakeManager* earthquakeManager;
 	double waterSpeed; // Relative speed of water flow simulation
 	unsigned int waterMaxSteps; // Maximum number of water simulation steps per frame
 	GLfloat rainStrength; // Amount of water deposited by rain tools and objects on each water simulation step
@@ -156,6 +158,9 @@ class Sandbox:public Vrui::Application,public GLObject
 	GLMotif::TextField* frameRateTextField;
 	GLMotif::TextFieldSlider* waterAttenuationSlider;
 	GLMotif::TextFieldSlider* baseWaterLevelSlider;
+	GLMotif::PopupWindow* earthquakeControlDialog;
+	GLMotif::TextFieldSlider* earthquakeRadiusSlider;
+	GLMotif::TextFieldSlider* earthquakeStrengthSlider;
 	int controlPipeFd; // File descriptor of an optional named pipe to send control commands to a running AR Sandbox
 	
 	/* Private methods: */
@@ -165,12 +170,16 @@ class Sandbox:public Vrui::Application,public GLObject
 	void addWater(GLContextData& contextData) const; // Function to render geometry that adds water to the water table
 	void pauseUpdatesCallback(GLMotif::ToggleButton::ValueChangedCallbackData* cbData);
 	void showWaterControlDialogCallback(Misc::CallbackData* cbData);
+	void showEarthquakeControlDialogCallback(Misc::CallbackData* cbData);
 	void waterSpeedSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterMaxStepsSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
+	GLMotif::PopupWindow* createEarthquakeControlDialog(void);
 	
 	/* Constructors and destructors: */
 	public:

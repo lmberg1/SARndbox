@@ -26,6 +26,7 @@ uniform sampler2DRect oldBathymetrySampler;
 uniform sampler2DRect newBathymetrySampler;
 uniform sampler2DRect quantitySampler;
 uniform float baseWaterLevel;
+uniform float oldBaseWaterLevel;
 
 void main()
 	{
@@ -48,6 +49,7 @@ void main()
 	# else
 	float height = max(q.x-bOld, 0.0)+bNew;
 	float xVal = max(height, baseWaterLevel);
+	if (oldBaseWaterLevel > baseWaterLevel) xVal = min(height, baseWaterLevel);
 	gl_FragColor=vec4(xVal,q.yz,0.0);
 	#endif
 	}

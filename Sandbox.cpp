@@ -108,6 +108,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "LocalWaterTool.h"
 #include "DEMTool.h"
 #include "BathymetrySaverTool.h"
+#include "EarthquakeTool.h"
+#include "EarthquakeManager.h"
 
 #include "Config.h"
 
@@ -323,6 +325,11 @@ void Sandbox::showWaterControlDialogCallback(Misc::CallbackData* cbData)
 	{
 	Vrui::popupPrimaryWidget(waterControlDialog);
 	}
+	
+void Sandbox::showEarthquakeControlDialogCallback(Misc::CallbackData* cbData)
+	{
+	Vrui::popupPrimaryWidget(earthquakeControlDialog);
+	}
 
 void Sandbox::waterSpeedSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
@@ -342,6 +349,16 @@ void Sandbox::waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChan
 void Sandbox::baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
 	waterTable->setBaseWaterLevel(GLfloat(cbData->value));
+	}
+	
+void Sandbox::earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
+	{
+	earthquakeManager->setEarthquakeRadius(GLfloat(cbData->value));
+	}
+
+void Sandbox::earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
+	{
+	earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
 	}
 
 GLMotif::PopupMenu* Sandbox::createMainMenu(void)
@@ -363,6 +380,10 @@ GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 		/* Create a button to show the water control dialog: */
 		GLMotif::Button* showWaterControlDialogButton=new GLMotif::Button("ShowWaterControlDialogButton",mainMenu,"Show Water Simulation Control");
 		showWaterControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showWaterControlDialogCallback);
+		
+		/* Create a button to show the earthquake control dialog: */
+		GLMotif::Button* showEarthquakeControlDialogButton=new GLMotif::Button("ShowEarthquakeControlDialogButton",mainMenu,"Show Earthquake Simulation Control");
+		showEarthquakeControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showEarthquakeControlDialogCallback);
 		}
 	
 	/* Finish building the main menu: */
@@ -449,6 +470,48 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	waterControlDialog->manageChild();
 	
 	return waterControlDialogPopup;
+	}
+	
+GLMotif::PopupWindow* Sandbox::createEarthquakeControlDialog(void)
+	{
+	const GLMotif::StyleSheet& ss=*Vrui::getWidgetManager()->getStyleSheet();
+	
+	/* Create a popup window shell: */
+	GLMotif::PopupWindow* earthquakeControlDialogPopup=new GLMotif::PopupWindow("EarthquakeControlDialogPopup",Vrui::getWidgetManager(),"Earthquake Simulation Control");
+	earthquakeControlDialogPopup->setCloseButton(true);
+	earthquakeControlDialogPopup->setResizableFlags(true,false);
+	earthquakeControlDialogPopup->popDownOnClose();
+	
+	GLMotif::RowColumn* earthquakeControlDialog=new GLMotif::RowColumn("EarthquakeControlDialog",earthquakeControlDialogPopup,false);
+	earthquakeControlDialog->setOrientation(GLMotif::RowColumn::VERTICAL);
+	earthquakeControlDialog->setPacking(GLMotif::RowColumn::PACK_TIGHT);
+	earthquakeControlDialog->setNumMinorWidgets(2);
+	
+	new GLMotif::Label("EarthquakeRadius",earthquakeControlDialog,"Radius");
+	
+	earthquakeRadiusSlider=new GLMotif::TextFieldSlider("earthquakeRadiusSlider",earthquakeControlDialog,8,ss.fontHeight*10.0f);
+	earthquakeRadiusSlider->getTextField()->setFieldWidth(7);
+	earthquakeRadiusSlider->getTextField()->setPrecision(4);
+	earthquakeRadiusSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+	earthquakeRadiusSlider->setValueRange(0,200.0,1.0);
+	earthquakeRadiusSlider->getSlider()->addNotch(earthquakeManager->getEarthquakeRadius());
+	earthquakeRadiusSlider->setValue(earthquakeManager->getEarthquakeRadius());
+	earthquakeRadiusSlider->getValueChangedCallbacks().add(this,&Sandbox::earthquakeRadiusSliderCallback);
+	
+	new GLMotif::Label("EarthquakeStrength",earthquakeControlDialog,"Strength");
+	
+	earthquakeStrengthSlider=new GLMotif::TextFieldSlider("earthquakeStrengthSlider",earthquakeControlDialog,8,ss.fontHeight*10.0f);
+	earthquakeStrengthSlider->getTextField()->setFieldWidth(7);
+	earthquakeStrengthSlider->getTextField()->setPrecision(4);
+	earthquakeStrengthSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+	waterSpeedSlider->setValueRange(0.0,100.0,0.5);
+	earthquakeStrengthSlider->getSlider()->addNotch(earthquakeManager->getEarthquakePerturbation());
+	earthquakeStrengthSlider->setValue(earthquakeManager->getEarthquakePerturbation());
+	earthquakeStrengthSlider->getValueChangedCallbacks().add(this,&Sandbox::earthquakeStrengthSliderCallback);
+	
+	earthquakeControlDialog->manageChild();
+	
+	return earthquakeControlDialogPopup;
 	}
 
 namespace {
@@ -564,9 +627,10 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	 handExtractor(0),addWaterFunction(0),addWaterFunctionRegistered(false),
 	 sun(0),
 	 activeDem(0),
-	 mainMenu(0),pauseUpdatesToggle(0),waterControlDialog(0),
+	 mainMenu(0),pauseUpdatesToggle(0),waterControlDialog(0), 
 	 waterSpeedSlider(0),waterMaxStepsSlider(0),frameRateTextField(0),waterAttenuationSlider(0), 
 	 baseWaterLevelSlider(0),
+	 earthquakeControlDialog(0), earthquakeRadiusSlider(0), earthquakeStrengthSlider(0),
 	 controlPipeFd(-1)
 	{
 	/* Read the sandbox's default configuration parameters: */
@@ -600,6 +664,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	Math::Interval<double> rainElevationRange=cfg.retrieveValue<Math::Interval<double> >("./rainElevationRange",Math::Interval<double>(-1000.0,1000.0));
 	rainStrength=cfg.retrieveValue<GLfloat>("./rainStrength",0.25f);
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
+	GLfloat baseWaterLevel=0.0f;
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
 	
@@ -686,6 +751,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				waterSpeed=atof(argv[i]);
 				++i;
 				waterMaxSteps=atoi(argv[i]);
+				}
+			else if(strcasecmp(argv[i]+1,"bwl")==0)
+				{
+				++i;
+				baseWaterLevel=GLfloat(atof(argv[i]));
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
@@ -934,11 +1004,18 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
 		waterTable->setWaterDeposit(evaporationRate);
+
+		/* Set up base water level */		
+		waterTable->setBaseWaterLevel(baseWaterLevel);
+		if(baseWaterLevelSlider!=0)
+			baseWaterLevelSlider->setValue(baseWaterLevel);
 		
 		/* Register a render function with the water table: */
 		addWaterFunction=Misc::createFunctionCall(this,&Sandbox::addWater);
 		waterTable->addRenderFunction(addWaterFunction);
 		addWaterFunctionRegistered=true;
+		
+		earthquakeManager = new EarthquakeManager();
 		}
 	
 	/* Initialize all surface renderers: */
@@ -989,14 +1066,20 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	mainMenu=createMainMenu();
 	Vrui::setMainMenu(mainMenu);
 	if(waterTable!=0)
+		{
 		waterControlDialog=createWaterControlDialog();
+		earthquakeControlDialog=createEarthquakeControlDialog();
+		}
 	
 	/* Initialize the custom tool classes: */
 	GlobalWaterTool::initClass(*Vrui::getToolManager());
 	LocalWaterTool::initClass(*Vrui::getToolManager());
 	DEMTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
+		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
+		EarthquakeTool::initClass(waterTable, earthquakeManager, *Vrui::getToolManager());
+		}
 	addEventTool("Pause Topography",0,0);
 	
 	if(!controlPipeName.empty())
@@ -1041,9 +1124,11 @@ Sandbox::~Sandbox(void)
 	delete handExtractor;
 	delete addWaterFunction;
 	delete[] pixelDepthCorrection;
+	delete earthquakeManager;
 	
 	delete mainMenu;
 	delete waterControlDialog;
+	delete earthquakeControlDialog;
 	
 	close(controlPipeFd);
 	}
@@ -1146,6 +1231,14 @@ void Sandbox::frame(void)
 				if(waterAttenuationSlider!=0)
 					waterAttenuationSlider->setValue(attenuation);
 				}
+			else if(strcasecmp(command,"baseWaterLevel")==0)
+				{
+				double baseWaterLevel=atof(parameter);
+				if(waterTable!=0)
+					waterTable->setBaseWaterLevel(GLfloat(baseWaterLevel));
+				if(baseWaterLevelSlider!=0)
+					baseWaterLevelSlider->setValue(baseWaterLevel);
+				}
 			else if(strcasecmp(command,"colorMap")==0)
 				{
 				try
@@ -1205,7 +1298,14 @@ void Sandbox::display(GLContextData& contextData) const
 	if(waterTable!=0&&dataItem->waterTableTime!=Vrui::getApplicationTime())
 		{
 		/* Update the water table's bathymetry grid: */
-		waterTable->updateBathymetry(contextData);
+		if (earthquakeManager->hasBathymetryGrid()) 
+			{
+			GLfloat *bathymetryGrid = earthquakeManager->getBathymetryGrid();
+			waterTable->updateBathymetry((const GLfloat *) bathymetryGrid, contextData);
+			earthquakeManager->setBathymetryGrid(NULL);
+			}
+		else 
+			waterTable->updateBathymetry(contextData);
 		
 		/* Run the water flow simulation's main pass: */
 		GLfloat totalTimeStep=GLfloat(Vrui::getFrameTime()*waterSpeed);
@@ -1218,6 +1318,7 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
+		
 		#if 0
 		if(totalTimeStep>1.0e-8f)
 			{
