@@ -109,13 +109,11 @@ class WaterTable2:public GLObject
 	std::vector<const AddWaterFunction*> renderFunctions; // A list of functions that are called after each water flow simulation step to locally add or remove water from the water table
 	GLfloat waterDeposit; // A fixed amount of water added at every iteration of the flow simulation, for evaporation etc.
 	GLfloat baseWaterLevel; // Base water level relative to the base plane
-	GLfloat oldBaseWaterLevel;
+	GLfloat oldBaseWaterLevel; // Previous base water level relative to the base plane
 	bool dryBoundary; // Flag whether to enforce dry boundary conditions at the end of each simulation step
 	unsigned int readBathymetryRequest; // Request token to read back the current bathymetry grid from the GPU
 	mutable GLfloat* readBathymetryBuffer; // Buffer into which to read the current bathymetry grid
 	mutable unsigned int readBathymetryReply; // Reply token after reading back the current bathymetry grid
-	mutable GLfloat* bathymetryGrid = NULL;
-	unsigned int earthquakeStepCount;
 	
 	/* Private methods: */
 	void calcTransformations(void); // Calculates derived transformations

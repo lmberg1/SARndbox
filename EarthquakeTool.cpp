@@ -124,19 +124,23 @@ int EarthquakeTool::getPixelPos(Vrui::Point p1, const char comp)
 		{
 		/* Average the pixel position calculations for the top and bottom 
 		corners since they might not be in line */
-		double x1 = (p1[0] - basePlaneCorners[1][0])/(basePlaneCorners[0][0] - basePlaneCorners[1][0])*factory->gridSize[0];
-		double x2 = (p1[0] - basePlaneCorners[3][0])/(basePlaneCorners[2][0] - basePlaneCorners[3][0])*factory->gridSize[0];
-		int x = round((x1 + x2)/2);
-		return x;
+		double x_top = (p1[0] - basePlaneCorners[1][0])/(basePlaneCorners[0][0] - basePlaneCorners[1][0]);
+		double x_bot = (p1[0] - basePlaneCorners[3][0])/(basePlaneCorners[2][0] - basePlaneCorners[3][0]);
+		double pix_top = x_top * factory->gridSize[0];
+		double pix_bot = x_bot * factory->gridSize[0];
+		int x_pix = round((pix_top + pix_bot)/2);
+		return x_pix;
 		}
 	if (comp == 'y')
 		{
 		/* Average the pixel position calculations for the left and right
 		corners since they might not be in line */
-		double y1 = (p1[1] - basePlaneCorners[3][1])/(basePlaneCorners[1][1] - basePlaneCorners[3][1])*factory->gridSize[1];
-		double y2 = (p1[1] - basePlaneCorners[2][1])/(basePlaneCorners[0][1] - basePlaneCorners[2][1])*factory->gridSize[1];
-		int y = round((y1 + y2)/2);
-		return y;
+		double y_left = (p1[1] - basePlaneCorners[3][1])/(basePlaneCorners[1][1] - basePlaneCorners[3][1]);
+		double y_right = (p1[1] - basePlaneCorners[2][1])/(basePlaneCorners[0][1] - basePlaneCorners[2][1]);
+		double pix_left = y_left * factory->gridSize[1];
+		double pix_right = y_right * factory->gridSize[1];
+		int y_pix = round((pix_left + pix_right)/2);
+		return y_pix;
 		}
 	
 	return 0;

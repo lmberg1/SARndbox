@@ -322,7 +322,6 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
-	earthquakeStepCount = 0;
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* sDepthImageRenderer,const Point basePlaneCorners[4])
@@ -380,7 +379,6 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
-	earthquakeStepCount = 0;
 	}
 
 WaterTable2::~WaterTable2(void)
