@@ -53,7 +53,7 @@ class SurfaceRenderer:public GLObject
 		GLuint contourLineColorTextureObject; // Color texture object for topographic contour line frame buffer
 		unsigned int contourLineVersion; // Version number of depth image used for contour line generation
 		GLhandleARB heightMapShader; // Shader program to render the surface using a height color map
-		GLint heightMapShaderUniforms[16]; // Locations of the height map shader's uniform variables
+		GLint heightMapShaderUniforms[17]; // Locations of the height map shader's uniform variables
 		unsigned int surfaceSettingsVersion; // Version number of surface settings for which the height map shader was built
 		unsigned int lightTrackerVersion; // Version number of light tracker state for which the height map shader was built
 		GLhandleARB globalAmbientHeightMapShader; // Shader program to render the global ambient component of the surface using a height color map

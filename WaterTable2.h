@@ -85,6 +85,18 @@ class WaterTable2:public GLObject
 		GLhandleARB waterShader; // Shader to add or remove water from the conserved quantities grid
 		GLint waterShaderUniformLocations[3];
 		
+		/* Vegetation shaders */ 
+		GLuint vegetationTextureObject; // One-component float color texture object holding the vertex-centered vegetation grid
+		GLuint hydrationTextureObjects[2]; // Double-buffered one-component float color texture object holding the vertex-centered hydration grid
+		int currentHydration; // Index of hydration texture containing the most recent hydration grid
+		GLuint vegetationFramebufferObject; // Frame buffer used for hydration computation
+		GLuint hydrationFramebufferObject; // Frame buffer used for vegetation computation
+		GLhandleARB vegetationShader; // Shader to update cell-centered vegetation values
+		GLint vegetationShaderUniformLocations[3];
+		GLhandleARB hydrationShader; // Shader to compute hydration values
+		GLint hydrationShaderUniformLocations[6];
+
+		
 		/* Constructors and destructors: */
 		DataItem(void);
 		virtual ~DataItem(void);
@@ -114,6 +126,14 @@ class WaterTable2:public GLObject
 	unsigned int readBathymetryRequest; // Request token to read back the current bathymetry grid from the GPU
 	mutable GLfloat* readBathymetryBuffer; // Buffer into which to read the current bathymetry grid
 	mutable unsigned int readBathymetryReply; // Reply token after reading back the current bathymetry grid
+	
+	/* Vegetation simulation parameters */
+	GLfloat hydrationRange;
+	GLfloat detectionThreshold;
+	GLfloat hydrationVelocity;
+	GLfloat hydrationStepSize;
+	GLfloat vegStart;
+	GLfloat vegEnd;
 	
 	/* Private methods: */
 	void calcTransformations(void); // Calculates derived transformations
@@ -177,8 +197,12 @@ class WaterTable2:public GLObject
 	void updateBathymetry(const GLfloat* bathymetryGrid,GLContextData& contextData) const; // Updates the bathymetry directly with a vertex-centered elevation grid of grid size minus 1
 	void setWaterLevel(const GLfloat* waterGrid,GLContextData& contextData) const; // Sets the current water level to the given grid, and resets flux components to zero
 	GLfloat runSimulationStep(bool forceStepSize,GLContextData& contextData) const; // Runs a water flow simulation step, always uses maxStepSize if flag is true (may lead to instability); returns step size taken by Runge-Kutta integration step
+	
+	void drawShapes(GLContextData& contextData) const;
+	void runVegetationSimulation(GLContextData& contextData) const; // Runs a vegetation growth simulation step
 	void bindBathymetryTexture(GLContextData& contextData) const; // Binds the bathymetry texture object to the active texture unit
 	void bindQuantityTexture(GLContextData& contextData) const; // Binds the most recent conserved quantities texture object to the active texture unit
+	void bindVegetationTexture(GLContextData& contextData) const; // Binds the vegetation texture object
 	void uploadWaterTextureTransform(GLint location) const; // Uploads the water texture transformation into the GLSL 4x4 matrix at the given uniform location
 	GLsizei getBathymetrySize(int index) const // Returns the width or height of the bathymetry grid
 		{

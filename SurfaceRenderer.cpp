@@ -337,6 +337,19 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			/* Compile the water handling shader: */
 			shaders.push_back(compileFragmentShader("SurfaceAddWaterColor"));
 			
+			/* Declare the vegetation handling functions: */
+			fragmentDeclarations+="\
+				void addVegetationColor(in vec2,inout vec4);\n";
+			
+			/* Compile the water handling shader: */
+			shaders.push_back(compileFragmentShader("SurfaceAddVegetationColor"));
+		
+			/* Call vegetation coloring function from fragment shader's main function: */
+			fragmentMain+="\
+					/* Modulate the base color with water color: */\n\
+					addVegetationColor(gl_FragCoord.xy,baseColor);\n\
+					\n";
+			
 			/* Call water coloring function from fragment shader's main function: */
 			if(advectWaterTexture)
 				{
@@ -412,6 +425,7 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterCellSize");
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterOpacity");
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterAnimationTime");
+			*(ulPtr++)=glGetUniformLocationARB(result,"vegetationSampler");
 			}
 		*(ulPtr++)=glGetUniformLocationARB(result,"projectionModelviewDepthProjection");
 		}
@@ -793,6 +807,15 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		
 		/* Upload the water animation time: */
 		glUniform1fARB(*(ulPtr++),GLfloat(animationTime));
+		
+		/* Bind the vegetation texture: */
+		glActiveTextureARB(GL_TEXTURE5_ARB);
+		waterTable->bindVegetationTexture(contextData);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+		glUniform1iARB(*(ulPtr++),5);
 		}
 	
 	/* Upload the combined projection, modelview, and depth unprojection matrix: */
@@ -806,6 +829,14 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 	/* Unbind all textures and buffers: */
 	if(waterTable!=0&&dem==0)
 		{
+		/* Unbind the vegetation texture: */
+		glActiveTextureARB(GL_TEXTURE5_ARB);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		
 		glActiveTextureARB(GL_TEXTURE4_ARB);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
