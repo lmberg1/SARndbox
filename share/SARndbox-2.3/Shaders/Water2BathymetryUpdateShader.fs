@@ -49,7 +49,7 @@ void main()
 	# else
 	float height = max(q.x-bOld, 0.0)+bNew;
 	float xVal = max(height, baseWaterLevel);
-	if (oldBaseWaterLevel > baseWaterLevel) xVal = min(height, baseWaterLevel);
+	//if (oldBaseWaterLevel > baseWaterLevel) xVal = min(height, baseWaterLevel);
 	gl_FragColor=vec4(xVal,q.yz,0.0);
 	#endif
 	}
