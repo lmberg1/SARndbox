@@ -100,6 +100,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "DepthImageRenderer.h"
 #include "ElevationColorMap.h"
 #include "DEM.h"
+#include "Image.h"
 #include "SurfaceRenderer.h"
 #include "WaterTable2.h"
 #include "HandExtractor.h"
@@ -107,6 +108,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "GlobalWaterTool.h"
 #include "LocalWaterTool.h"
 #include "DEMTool.h"
+#include "ImageTool.h"
 #include "BathymetrySaverTool.h"
 #include "EarthquakeTool.h"
 #include "EarthquakeManager.h"
@@ -281,6 +283,26 @@ void Sandbox::toggleDEM(DEM* dem)
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		if(rsIt->fixProjectorView)
 			rsIt->surfaceRenderer->setDem(activeDem);
+	}
+	
+void Sandbox::toggleImage(Image* image)
+	{
+	/* Check if this is the active Image: */
+	if(activeImage==image)
+		{
+		/* Deactivate the currently active Image: */
+		activeImage=0;
+		}
+	else
+		{
+		/* Activate this Image: */
+		activeImage=image;
+		}
+	
+	/* Enable DEM matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
+	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		if(rsIt->fixProjectorView)
+			rsIt->surfaceRenderer->setImage(activeImage);
 	}
 
 void Sandbox::addWater(GLContextData& contextData) const
@@ -627,6 +649,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	 handExtractor(0),addWaterFunction(0),addWaterFunctionRegistered(false),
 	 sun(0),
 	 activeDem(0),
+	 activeImage(0),
 	 mainMenu(0),pauseUpdatesToggle(0),waterControlDialog(0), 
 	 waterSpeedSlider(0),waterMaxStepsSlider(0),frameRateTextField(0),waterAttenuationSlider(0), 
 	 baseWaterLevelSlider(0),
@@ -1075,6 +1098,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	GlobalWaterTool::initClass(*Vrui::getToolManager());
 	LocalWaterTool::initClass(*Vrui::getToolManager());
 	DEMTool::initClass(*Vrui::getToolManager());
+	ImageTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
@@ -1320,7 +1344,7 @@ void Sandbox::display(GLContextData& contextData) const
 			}
 			
 		/* Run vegetation simulation */
-		waterTable->runVegetationSimulation(contextData);
+		//waterTable->runVegetationSimulation(contextData);
 		
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();

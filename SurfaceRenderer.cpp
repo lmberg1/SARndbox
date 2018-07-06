@@ -45,10 +45,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "DepthImageRenderer.h"
 #include "ElevationColorMap.h"
 #include "DEM.h"
+#include "Image.h"
 #include "WaterTable2.h"
 #include "ShaderHelper.h"
 #include "Config.h"
 
+#include <stdio.h>
 /******************************************
 Methods of class SurfaceRenderer::DataItem:
 ******************************************/
@@ -134,7 +136,8 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 				uniform float demDistScale; // Distance from surface to DEM at which the color map saturates\n";
 			
 			vertexVaryings+="\
-				varying float demDist; // Scaled signed distance from surface to DEM\n";
+				varying float demDist; // Scaled signed distance from surface to DEM\n\
+				\n";
 			
 			/* Add DEM matching code to vertex shader's main function: */
 			vertexMain+="\
@@ -143,6 +146,31 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 				\n\
 				/* Calculate scaled DEM-surface distance: */\n\
 				demDist=(vertexDem.z-texture2DRect(demSampler,vertexDem.xy).r)*demDistScale;\n\
+				\n";
+			}
+		else if(image!=0)
+			{
+			/* Add declarations for image mapping: */
+			vertexUniforms+="\
+				uniform mat4 imageTransform; // Transformation from camera space to image space\n\
+				uniform sampler2DRect imageSampler; // Sampler for the image texture\n\
+				\n";
+				
+			vertexVaryings+="\
+				varying float r; // Red component of image\n\
+				varying float g; // Green component of image\n\
+				varying float b; // Blue component of image\n\
+				\n";
+			
+			/* Add image mapping code to vertex shader's main function: */
+			vertexMain+="\
+				/* Transform the camera-space vertex to scaled DEM space: */\n\
+				vec4 vertexImage=imageTransform*vertexCc;\n\
+				\n\
+				/* Get image color components from texture: */\n\
+				r=texture2DRect(imageSampler,vertexImage.xy).r;\n\
+				g=texture2DRect(imageSampler,vertexImage.xy).g;\n\
+				b=texture2DRect(imageSampler,vertexImage.xy).b;\n\
 				\n";
 			}
 		else if(elevationColorMap!=0)
@@ -261,7 +289,8 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			{
 			/* Add declarations for DEM matching: */
 			fragmentVaryings+="\
-				varying float demDist; // Scaled signed distance from surface to DEM\n";
+				varying float demDist; // Scaled signed distance from surface to DEM\n\
+				\n";
 			
 			/* Add DEM matching code to the fragment shader's main function: */
 			fragmentMain+="\
@@ -271,6 +300,21 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 					baseColor=mix(vec4(1.0,1.0,1.0,1.0),vec4(1.0,0.0,0.0,1.0),min(-demDist,1.0));\n\
 				else\n\
 					baseColor=mix(vec4(1.0,1.0,1.0,1.0),vec4(0.0,0.0,1.0,1.0),min(demDist,1.0));\n\
+				\n";
+			}
+		else if(image!=0)
+			{
+			/* Add declarations for image mapping: */
+			fragmentVaryings+="\
+				varying float r;\n\
+				varying float g;\n\
+				varying float b;\n\
+				\n";
+			
+			/* Add image mapping code to the fragment shader's main function: */
+			fragmentMain+="\
+				/* Set the fragment's color as the image color: */\n\
+				vec4 baseColor = vec4(r, g, b, 1.0);\n\
 				\n";
 			}
 		else if(elevationColorMap!=0)
@@ -291,7 +335,7 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			{
 			fragmentMain+="\
 				/* Set the surface's base color to white: */\n\
-				vec4 baseColor=vec4(1.0,1.0,1.0,1.0);\n\
+				vec4 baseColor=vec4(0.0,1.0,0.0,1.0);\n\
 				\n";
 			}
 		
@@ -398,6 +442,12 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			*(ulPtr++)=glGetUniformLocationARB(result,"demTransform");
 			*(ulPtr++)=glGetUniformLocationARB(result,"demSampler");
 			*(ulPtr++)=glGetUniformLocationARB(result,"demDistScale");
+			}
+		else if(image!=0)
+			{
+			/* Query image mapping uniform variables: */
+			*(ulPtr++)=glGetUniformLocationARB(result,"imageTransform");
+			*(ulPtr++)=glGetUniformLocationARB(result,"imageSampler");
 			}
 		else if(elevationColorMap!=0)
 			{
@@ -526,6 +576,7 @@ SurfaceRenderer::SurfaceRenderer(const DepthImageRenderer* sDepthImageRenderer)
 	:depthImageRenderer(sDepthImageRenderer),
 	 drawContourLines(true),contourLineFactor(1.0f),
 	 elevationColorMap(0),
+	 image(0),
 	 dem(0),demDistScale(1.0f),
 	 illuminate(false),
 	 waterTable(0),advectWaterTexture(false),waterOpacity(2.0f),
@@ -612,7 +663,7 @@ void SurfaceRenderer::setContourLineDistance(GLfloat newContourLineDistance)
 void SurfaceRenderer::setElevationColorMap(ElevationColorMap* newElevationColorMap)
 	{
 	/* Check if setting this elevation color map invalidates the shader: */
-	if(dem==0&&((newElevationColorMap!=0&&elevationColorMap==0)||(newElevationColorMap==0&&elevationColorMap!=0)))
+	if(image==0&&dem==0&&((newElevationColorMap!=0&&elevationColorMap==0)||(newElevationColorMap==0&&elevationColorMap!=0)))
 		++surfaceSettingsVersion;
 	
 	/* Set the elevation color map: */
@@ -627,6 +678,16 @@ void SurfaceRenderer::setDem(DEM* newDem)
 	
 	/* Set the new DEM: */
 	dem=newDem;
+	}
+	
+void SurfaceRenderer::setImage(Image* newImage)
+	{
+	/* Check if setting this image invalidates the shader: */
+	if(((newImage!=0&&image==0)||(newImage==0&&image!=0)))
+		++surfaceSettingsVersion;
+	++surfaceSettingsVersion;
+	/* Set the new image: */
+	image=newImage;
 	}
 
 void SurfaceRenderer::setDemDistScale(GLfloat newDemDistScale)
@@ -737,6 +798,16 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		
 		/* Upload the DEM distance scale factor: */
 		glUniform1fARB(*(ulPtr++),1.0f/(demDistScale*dem->getVerticalScale()));
+		}
+	else if(image!=0)
+		{
+		/* Upload the image transformation: */
+		image->uploadImageTransform(*(ulPtr++));
+		
+		/* Bind the image texture: */
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		image->bindTexture(contextData);
+		glUniform1iARB(*(ulPtr++),1);
 		}
 	else if(elevationColorMap!=0)
 		{
@@ -864,6 +935,11 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		{
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glBindTexture(GL_TEXTURE_1D,0);
+		}
+	else if(image!=0)
+		{
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 		}
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);

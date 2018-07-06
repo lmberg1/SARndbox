@@ -63,6 +63,7 @@ class FrameFilter;
 class DepthImageRenderer;
 class ElevationColorMap;
 class DEM;
+class Image;
 class SurfaceRenderer;
 class WaterTable2;
 class HandExtractor;
@@ -123,6 +124,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	friend class GlobalWaterTool;
 	friend class LocalWaterTool;
 	friend class DEMTool;
+	friend class ImageTool;
 	
 	/* Elements: */
 	private:
@@ -150,6 +152,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	Vrui::Scalar navSize;
 	Vrui::Vector navUp;
 	DEM* activeDem; // The currently active DEM
+	Image* activeImage; // The currently active image
 	GLMotif::PopupMenu* mainMenu;
 	GLMotif::ToggleButton* pauseUpdatesToggle;
 	GLMotif::PopupWindow* waterControlDialog;
@@ -167,6 +170,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	void rawDepthFrameDispatcher(const Kinect::FrameBuffer& frameBuffer); // Callback receiving raw depth frames from the Kinect camera; forwards them to the frame filter and rain maker objects
 	void receiveFilteredFrame(const Kinect::FrameBuffer& frameBuffer); // Callback receiving filtered depth frames from the filter object
 	void toggleDEM(DEM* dem); // Sets or toggles the currently active DEM
+	void toggleImage(Image* image); // Sets or toggles the currently active image
 	void addWater(GLContextData& contextData) const; // Function to render geometry that adds water to the water table
 	void pauseUpdatesCallback(GLMotif::ToggleButton::ValueChangedCallbackData* cbData);
 	void showWaterControlDialogCallback(Misc::CallbackData* cbData);

@@ -37,6 +37,7 @@ class DepthImageRenderer;
 class ElevationColorMap;
 class GLLightTracker;
 class DEM;
+class Image;
 class WaterTable2;
 
 class SurfaceRenderer:public GLObject
@@ -77,6 +78,8 @@ class SurfaceRenderer:public GLObject
 	
 	ElevationColorMap* elevationColorMap; // Pointer to a color map for topographic elevation map coloring
 	
+	Image* image;
+	
 	DEM* dem; // Pointer to a pre-made digital elevation model to create a zero-surface for height color mapping
 	GLfloat demDistScale; // Maximum deviation from surface to DEM in camera-space units
 	
@@ -106,6 +109,7 @@ class SurfaceRenderer:public GLObject
 	void setContourLineDistance(GLfloat newContourLineDistance); // Sets the elevation distance between adjacent topographic contour lines
 	void setElevationColorMap(ElevationColorMap* newElevationColorMap); // Sets an elevation color map
 	void setDem(DEM* newDem); // Sets a pre-made digital elevation model to create a zero surface for height color mapping
+	void setImage(Image* newImage); // Sets a pre-made digital elevation model to create a zero surface for height color mapping
 	void setDemDistScale(GLfloat newDemDistScale); // Sets the deviation from DEM to surface to saturate the deviation color map
 	void setIlluminate(bool newIlluminate); // Sets the illumination flag
 	void setWaterTable(WaterTable2* newWaterTable); // Sets the pointer to the water table; NULL disables water handling
