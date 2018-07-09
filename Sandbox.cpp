@@ -781,6 +781,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				++i;
 				baseWaterLevel=GLfloat(atof(argv[i]));
+				printf("bwl: %f\n", baseWaterLevel);
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
@@ -877,7 +878,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				}
 			else if(strcasecmp(argv[i]+1,"veg")==0)
 				{
-				++i;
 				renderSettings.back().useVegetation=true;
 				}
 			else if(strcasecmp(argv[i]+1,"cp")==0)
@@ -1030,6 +1030,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	
 	if(waterSpeed>0.0)
 		{
+		printf("%f\n", baseWaterLevel);
 		/* Initialize the water flow simulator: */
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
