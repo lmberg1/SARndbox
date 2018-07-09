@@ -94,7 +94,7 @@ class WaterTable2:public GLObject
 		GLhandleARB vegetationShader; // Shader to update cell-centered vegetation values
 		GLint vegetationShaderUniformLocations[3];
 		GLhandleARB hydrationShader; // Shader to compute hydration values
-		GLint hydrationShaderUniformLocations[6];
+		GLint hydrationShaderUniformLocations[7];
 
 		
 		/* Constructors and destructors: */

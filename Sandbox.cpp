@@ -166,6 +166,7 @@ Sandbox::RenderSettings::RenderSettings(void)
 	 elevationColorMap(0),
 	 useContourLines(true),contourLineSpacing(0.75f),
 	 renderWaterSurface(false),waterOpacity(2.0f),
+	 useVegetation(false),
 	 surfaceRenderer(0),waterRenderer(0)
 	{
 	/* Load the default projector transformation: */
@@ -179,6 +180,7 @@ Sandbox::RenderSettings::RenderSettings(const Sandbox::RenderSettings& source)
 	 elevationColorMap(source.elevationColorMap!=0?new ElevationColorMap(*source.elevationColorMap):0),
 	 useContourLines(source.useContourLines),contourLineSpacing(source.contourLineSpacing),
 	 renderWaterSurface(source.renderWaterSurface),waterOpacity(source.waterOpacity),
+	 useVegetation(source.useVegetation),
 	 surfaceRenderer(0),waterRenderer(0)
 	{
 	}
@@ -873,6 +875,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				++i;
 				renderSettings.back().waterOpacity=GLfloat(atof(argv[i]));
 				}
+			else if(strcasecmp(argv[i]+1,"veg")==0)
+				{
+				++i;
+				renderSettings.back().useVegetation=true;
+				}
 			else if(strcasecmp(argv[i]+1,"cp")==0)
 				{
 				++i;
@@ -1059,6 +1066,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rsIt->surfaceRenderer->setContourLineDistance(rsIt->contourLineSpacing);
 		rsIt->surfaceRenderer->setElevationColorMap(rsIt->elevationColorMap);
 		rsIt->surfaceRenderer->setIlluminate(rsIt->hillshade);
+		rsIt->surfaceRenderer->setVegetation(rsIt->useVegetation);
 		if(waterTable!=0)
 			{
 			if(rsIt->renderWaterSurface)
@@ -1343,8 +1351,11 @@ void Sandbox::display(GLContextData& contextData) const
 			++numSteps;
 			}
 			
-		/* Run vegetation simulation */
-		//waterTable->runVegetationSimulation(contextData);
+		if(rs.useVegetation)
+			{
+			/* Run vegetation simulation */
+			waterTable->runVegetationSimulation(contextData);
+			}
 		
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();

@@ -78,7 +78,7 @@ class SurfaceRenderer:public GLObject
 	
 	ElevationColorMap* elevationColorMap; // Pointer to a color map for topographic elevation map coloring
 	
-	Image* image;
+	Image* image; // Pointer to an image to be displayed
 	
 	DEM* dem; // Pointer to a pre-made digital elevation model to create a zero-surface for height color mapping
 	GLfloat demDistScale; // Maximum deviation from surface to DEM in camera-space units
@@ -88,6 +88,8 @@ class SurfaceRenderer:public GLObject
 	WaterTable2* waterTable; // Pointer to the water table object; if NULL, water is ignored
 	bool advectWaterTexture; // Flag whether water texture coordinates are advected to visualize water flow
 	GLfloat waterOpacity; // Scaling factor for water opacity
+	
+	bool vegetation; // Flag whether to use vegetation
 	
 	unsigned int surfaceSettingsVersion; // Version number of surface settings to invalidate surface rendering shader on changes
 	double animationTime; // Time value for water animation
@@ -115,6 +117,7 @@ class SurfaceRenderer:public GLObject
 	void setWaterTable(WaterTable2* newWaterTable); // Sets the pointer to the water table; NULL disables water handling
 	void setAdvectWaterTexture(bool newAdvectWaterTexture); // Sets the water texture coordinate advection flag
 	void setWaterOpacity(GLfloat newWaterOpacity); // Sets the water opacity factor
+	void setVegetation(bool newVegetation); // Sets the vegetation flag
 	void setAnimationTime(double newAnimationTime); // Sets the time for water animation in seconds
 	void renderSinglePass(const int viewport[4],const PTransform& projection,const OGTransform& modelview,GLContextData& contextData) const; // Renders the surface in a single pass using the current surface settings
 	#if 0

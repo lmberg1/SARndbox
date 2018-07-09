@@ -392,7 +392,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	
 	/* Initialize the vegetation simulation parameters: */
 	hydrationRange = height * 0.1625f;
-	detectionThreshold = 0.001f;
+	detectionThreshold = 0.1f;
 	hydrationVelocity = 0.1f;
 	hydrationStepSize = 2.0f;
 	vegStart = 0.2f;
@@ -436,8 +436,8 @@ void WaterTable2::initContext(GLContextData& contextData) const
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,h);
 		}
 	delete[] h;
@@ -511,8 +511,8 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 	GLfloat* v=makeBuffer(size[0],size[1],1,0.0);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,v);
 	delete[] v;
@@ -752,12 +752,13 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->hydrationShader=glLinkShader(vertexShader,fragmentShader);
 	glDeleteObjectARB(vertexShader);
 	glDeleteObjectARB(fragmentShader);
-	dataItem->hydrationShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->hydrationShader,"derivativeSampler");
-	dataItem->hydrationShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->hydrationShader,"prevHydrationSampler");
-	dataItem->hydrationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationRange");
-	dataItem->hydrationShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->hydrationShader,"detectionThreshold");
-	dataItem->hydrationShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationVelocity");
-	dataItem->hydrationShaderUniformLocations[5]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationStepSize");
+	dataItem->hydrationShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->hydrationShader,"bathymetrySampler");
+	dataItem->hydrationShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->hydrationShader,"quantitySampler");
+	dataItem->hydrationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->hydrationShader,"prevHydrationSampler");
+	dataItem->hydrationShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationRange");
+	dataItem->hydrationShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->hydrationShader,"detectionThreshold");
+	dataItem->hydrationShaderUniformLocations[5]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationVelocity");
+	dataItem->hydrationShaderUniformLocations[6]=glGetUniformLocationARB(dataItem->hydrationShader,"hydrationStepSize");
 	}
 	}
 
@@ -1221,22 +1222,25 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
 	/* Set up the hydration shader */
 	glUseProgramObjectARB(dataItem->hydrationShader);
 	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->derivativeTextureObject);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[dataItem->currentBathymetry]);
 	glUniform1iARB(dataItem->hydrationShaderUniformLocations[0], 0);
 	glActiveTextureARB(GL_TEXTURE1_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[1 - dataItem->currentHydration]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
 	glUniform1iARB(dataItem->hydrationShaderUniformLocations[1], 1);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[2],hydrationRange);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[3],detectionThreshold);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[4],hydrationVelocity);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[5],hydrationStepSize);
+	glActiveTextureARB(GL_TEXTURE2_ARB);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[1-dataItem->currentHydration]);
+	glUniform1iARB(dataItem->hydrationShaderUniformLocations[2], 2);
+	glUniformARB(dataItem->hydrationShaderUniformLocations[3],hydrationRange);
+	glUniformARB(dataItem->hydrationShaderUniformLocations[4],detectionThreshold);
+	glUniformARB(dataItem->hydrationShaderUniformLocations[5],hydrationVelocity);
+	glUniformARB(dataItem->hydrationShaderUniformLocations[6],hydrationStepSize);
 
 	/* Run the hydration shader program */
 	glBegin(GL_QUADS);
 	glVertex2i(0,0);
-	glVertex2i(size[0],0);
-	glVertex2i(size[0],size[1]);
-	glVertex2i(0,size[1]);
+	glVertex2i(size[0]-1,0);
+	glVertex2i(size[0]-1,size[1]-1);
+	glVertex2i(0,size[1]-1);
 	glEnd();
 	
 	/* Update the current hydration: */
@@ -1283,13 +1287,15 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
 	/* Run the vegetation update: */
 	glBegin(GL_QUADS);
 	glVertex2i(0,0);
-	glVertex2i(size[0],0);
-	glVertex2i(size[0],size[1]);
-	glVertex2i(0,size[1]);
+	glVertex2i(size[0]-1,0);
+	glVertex2i(size[0]-1,size[1]-1);
+	glVertex2i(0,size[1]-1);
 	glEnd();
 		
 	/* Unbind all shaders and textures: */
 	glUseProgramObjectARB(0);
+	glActiveTextureARB(GL_TEXTURE2_ARB);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 	glActiveTextureARB(GL_TEXTURE1_ARB);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 	glActiveTextureARB(GL_TEXTURE0_ARB);
