@@ -10,7 +10,7 @@ SCRIPT_DIR=~/src/SARndbox-2.3/scripts
 if [ "$1" = "-r" ]
 then
 	# restore original height color map
-	cp "$MAP_DIR"/original.cpt $(MAP_DIR)/HeightColorMap.cpt
+	cp "$MAP_DIR"/original.cpt "$MAP_DIR"/HeightColorMap.cpt
 else
 	# get shifted down color map
 	"$SCRIPT_DIR"/./change-map-colors.sh + > temp1

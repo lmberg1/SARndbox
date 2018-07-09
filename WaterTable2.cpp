@@ -86,7 +86,8 @@ WaterTable2::DataItem::DataItem(void)
 	 bathymetryShader(0),waterAdaptShader(0),derivativeShader(0),maxStepSizeShader(0),boundaryShader(0),eulerStepShader(0),rungeKuttaStepShader(0),waterAddShader(0),waterShader(0), 
 	 vegetationTextureObject(0),currentHydration(0),
 	 vegetationFramebufferObject(0),hydrationFramebufferObject(0),
-	 vegetationShader(0),hydrationShader(0)
+	 vegetationShader(0),hydrationShader(0),
+	 slopeTextureObject(0), slopeFramebufferObject(0), slopeShader(0)
 	{
 	for(int i=0;i<2;++i)
 		{
@@ -119,6 +120,7 @@ WaterTable2::DataItem::~DataItem(void)
 	glDeleteTextures(1,&waterTextureObject);
 	glDeleteTextures(1,&vegetationTextureObject);
 	glDeleteTextures(2,hydrationTextureObjects);
+	glDeleteTextures(1, &slopeTextureObject);
 	glDeleteFramebuffersEXT(1,&bathymetryFramebufferObject);
 	glDeleteFramebuffersEXT(1,&derivativeFramebufferObject);
 	glDeleteFramebuffersEXT(1,&maxStepSizeFramebufferObject);
@@ -126,6 +128,7 @@ WaterTable2::DataItem::~DataItem(void)
 	glDeleteFramebuffersEXT(1,&waterFramebufferObject);
 	glDeleteFramebuffersEXT(1,&vegetationFramebufferObject);
 	glDeleteFramebuffersEXT(1,&hydrationFramebufferObject);
+	glDeleteFramebuffersEXT(1,&slopeFramebufferObject);
 	glDeleteObjectARB(bathymetryShader);
 	glDeleteObjectARB(waterAdaptShader);
 	glDeleteObjectARB(derivativeShader);
@@ -137,6 +140,7 @@ WaterTable2::DataItem::~DataItem(void)
 	glDeleteObjectARB(waterShader);
 	glDeleteObjectARB(vegetationShader);
 	glDeleteObjectARB(hydrationShader);
+	glDeleteObjectARB(slopeShader);
 	}
 
 /****************************
@@ -438,7 +442,7 @@ void WaterTable2::initContext(GLContextData& contextData) const
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,h);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_LUMINANCE,GL_FLOAT,h);
 		}
 	delete[] h;
 	GLenum err;
@@ -490,6 +494,19 @@ void WaterTable2::initContext(GLContextData& contextData) const
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_LUMINANCE,GL_FLOAT,mss);
 		}
 	delete[] mss;
+	}
+	
+	{
+	/* Create the cell-centered slope texture: */
+	glGenTextures(1,&dataItem->slopeTextureObject);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->slopeTextureObject);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+	GLfloat* s=makeBuffer(size[0],size[1],1,0.0);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,s);
+	delete[] s;
 	}
 	
 	{
@@ -576,6 +593,17 @@ void WaterTable2::initContext(GLContextData& contextData) const
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT+i,GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[i],0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
+	}
+	
+	{
+	/* Create the slope frame buffer: */
+	glGenFramebuffersEXT(1,&dataItem->slopeFramebufferObject);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->slopeFramebufferObject);
+	
+	/* Attach the slope texture to the slope frame buffer: */
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_RECTANGLE_ARB,dataItem->slopeTextureObject,0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	}
 	
 	{
@@ -719,6 +747,18 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->waterAddShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->waterAddShader,"pmv");
 	dataItem->waterAddShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->waterAddShader,"stepSize");
 	dataItem->waterAddShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->waterAddShader,"waterSampler");
+	}
+	
+	/* Create the slope shader: */
+	{
+	GLhandleARB vertexShader=glCompileVertexShaderFromString(vertexShaderSource);
+	GLhandleARB fragmentShader=compileFragmentShader("Water2SlopeShader");
+	dataItem->slopeShader=glLinkShader(vertexShader,fragmentShader);
+	glDeleteObjectARB(vertexShader);
+	glDeleteObjectARB(fragmentShader);
+	dataItem->slopeShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->slopeShader,"cellSize");
+	dataItem->slopeShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->slopeShader,"theta");
+	dataItem->slopeShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->slopeShader,"bathymetrySampler");
 	}
 	
 	/* Create the water shader: */
@@ -873,6 +913,31 @@ void WaterTable2::updateBathymetry(GLContextData& contextData) const
 		glUniformARB(dataItem->bathymetryShaderUniformLocations[4],oldBaseWaterLevel);
 		
 		/* Run the bathymetry update: */
+		glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(size[0],0);
+		glVertex2i(size[0],size[1]);
+		glVertex2i(0,size[1]);
+		glEnd();
+		
+		/*********************************************************************
+		Calculate slope based on updated bathymetry.
+		*********************************************************************/
+		
+		/* Set up the slope integration frame buffer: */
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->slopeFramebufferObject);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glViewport(0,0,size[0],size[1]);
+	
+		/* Set up the slope shader: */
+		glUseProgramObjectARB(dataItem->slopeShader);
+		glUniformARB<2>(dataItem->slopeShaderUniformLocations[0],1,cellSize);
+		glUniformARB(dataItem->slopeShaderUniformLocations[1],theta);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[1-dataItem->currentBathymetry]);
+		glUniform1iARB(dataItem->slopeShaderUniformLocations[2],0);
+	
+		/* Run the slope step: */
 		glBegin(GL_QUADS);
 		glVertex2i(0,0);
 		glVertex2i(size[0],0);
@@ -1331,6 +1396,15 @@ void WaterTable2::bindVegetationTexture(GLContextData& contextData) const
 	
 	/* Bind the conserved quantities texture: */
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
+	}
+	
+void WaterTable2::bindSlopeTexture(GLContextData& contextData) const
+	{
+	/* Get the data item: */
+	DataItem* dataItem=contextData.retrieveDataItem<DataItem>(this);
+	
+	/* Bind the conserved quantities texture: */
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->slopeTextureObject);
 	}
 
 void WaterTable2::uploadWaterTextureTransform(GLint location) const

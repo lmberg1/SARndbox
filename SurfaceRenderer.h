@@ -76,6 +76,8 @@ class SurfaceRenderer:public GLObject
 	bool drawContourLines; // Flag if topographic contour lines are enabled
 	GLfloat contourLineFactor; // Inverse elevation distance between adjacent topographic contour lines
 	
+	bool showSlope; // Flag whether to show slope
+	
 	ElevationColorMap* elevationColorMap; // Pointer to a color map for topographic elevation map coloring
 	
 	Image* image; // Pointer to an image to be displayed
@@ -109,6 +111,7 @@ class SurfaceRenderer:public GLObject
 	/* New methods: */
 	void setDrawContourLines(bool newDrawContourLines); // Enables or disables topographic contour lines
 	void setContourLineDistance(GLfloat newContourLineDistance); // Sets the elevation distance between adjacent topographic contour lines
+	void setShowSlope(bool newShowSlope); // Sets the show slope flag
 	void setElevationColorMap(ElevationColorMap* newElevationColorMap); // Sets an elevation color map
 	void setDem(DEM* newDem); // Sets a pre-made digital elevation model to create a zero surface for height color mapping
 	void setImage(Image* newImage); // Sets a pre-made digital elevation model to create a zero surface for height color mapping

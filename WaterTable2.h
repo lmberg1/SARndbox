@@ -95,6 +95,12 @@ class WaterTable2:public GLObject
 		GLint vegetationShaderUniformLocations[3];
 		GLhandleARB hydrationShader; // Shader to compute hydration values
 		GLint hydrationShaderUniformLocations[7];
+		
+		/* Slope shaders */
+		GLuint slopeTextureObject;
+		GLuint slopeFramebufferObject;
+		GLint slopeShader;
+		GLint slopeShaderUniformLocations[3];
 
 		
 		/* Constructors and destructors: */
@@ -203,6 +209,7 @@ class WaterTable2:public GLObject
 	void bindBathymetryTexture(GLContextData& contextData) const; // Binds the bathymetry texture object to the active texture unit
 	void bindQuantityTexture(GLContextData& contextData) const; // Binds the most recent conserved quantities texture object to the active texture unit
 	void bindVegetationTexture(GLContextData& contextData) const; // Binds the vegetation texture object
+	void bindSlopeTexture(GLContextData& contextData) const;
 	void uploadWaterTextureTransform(GLint location) const; // Uploads the water texture transformation into the GLSL 4x4 matrix at the given uniform location
 	GLsizei getBathymetrySize(int index) const // Returns the width or height of the bathymetry grid
 		{

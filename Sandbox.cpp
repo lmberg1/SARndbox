@@ -167,6 +167,7 @@ Sandbox::RenderSettings::RenderSettings(void)
 	 useContourLines(true),contourLineSpacing(0.75f),
 	 renderWaterSurface(false),waterOpacity(2.0f),
 	 useVegetation(false),
+	 showSlope(false),
 	 surfaceRenderer(0),waterRenderer(0)
 	{
 	/* Load the default projector transformation: */
@@ -181,6 +182,7 @@ Sandbox::RenderSettings::RenderSettings(const Sandbox::RenderSettings& source)
 	 useContourLines(source.useContourLines),contourLineSpacing(source.contourLineSpacing),
 	 renderWaterSurface(source.renderWaterSurface),waterOpacity(source.waterOpacity),
 	 useVegetation(source.useVegetation),
+	 showSlope(source.showSlope),
 	 surfaceRenderer(0),waterRenderer(0)
 	{
 	}
@@ -781,7 +783,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				++i;
 				baseWaterLevel=GLfloat(atof(argv[i]));
-				printf("bwl: %f\n", baseWaterLevel);
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
@@ -879,6 +880,10 @@ Sandbox::Sandbox(int& argc,char**& argv)
 			else if(strcasecmp(argv[i]+1,"veg")==0)
 				{
 				renderSettings.back().useVegetation=true;
+				}
+			else if(strcasecmp(argv[i]+1,"slp")==0)
+				{
+				renderSettings.back().showSlope=true;
 				}
 			else if(strcasecmp(argv[i]+1,"cp")==0)
 				{
@@ -1030,7 +1035,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	
 	if(waterSpeed>0.0)
 		{
-		printf("%f\n", baseWaterLevel);
 		/* Initialize the water flow simulator: */
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
@@ -1068,6 +1072,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rsIt->surfaceRenderer->setElevationColorMap(rsIt->elevationColorMap);
 		rsIt->surfaceRenderer->setIlluminate(rsIt->hillshade);
 		rsIt->surfaceRenderer->setVegetation(rsIt->useVegetation);
+		rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
 		if(waterTable!=0)
 			{
 			if(rsIt->renderWaterSurface)
