@@ -317,6 +317,22 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 				vec4 baseColor = vec4(r, g, b, 1.0);\n\
 				\n";
 			}
+		else if(waterTable!=0&&showSlope!=0&&slopeColorMap!=0)
+			{
+			/* Declare the slope handling functions: */
+			fragmentDeclarations+="\
+				void addSlopeColor(in vec2,inout vec4);\n";
+			
+			/* Compile the slope handling shader: */
+			shaders.push_back(compileFragmentShader("SurfaceAddSlopeColor"));
+		
+			/* Call slope coloring function from fragment shader's main function: */
+			fragmentMain+="\
+				/* Get the fragment's color from the slope: */\n\
+				vec4 baseColor;\n\
+				addSlopeColor(gl_FragCoord.xy,baseColor);\n\
+				\n";
+			}
 		else if(elevationColorMap!=0)
 			{
 			/* Add declarations for height mapping: */
@@ -336,22 +352,6 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			fragmentMain+="\
 				/* Set the surface's base color to white: */\n\
 				vec4 baseColor=vec4(0.0,1.0,0.0,1.0);\n\
-				\n";
-			}
-			
-		if(showSlope!=0)
-			{
-			/* Declare the vegetation handling functions: */
-			fragmentDeclarations+="\
-				void addSlopeColor(in vec2,inout vec4);\n";
-			
-			/* Compile the water handling shader: */
-			shaders.push_back(compileFragmentShader("SurfaceAddSlopeColor"));
-		
-			/* Call vegetation coloring function from fragment shader's main function: */
-			fragmentMain+="\
-				/* Modulate the base color with water color: */\n\
-				addSlopeColor(gl_FragCoord.xy,baseColor);\n\
 				\n";
 			}
 		
@@ -387,13 +387,13 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 				\n";
 			}
 			
-		if(vegetation!=0)
+		if(waterTable!=0&&vegetation!=0)
 			{
 			/* Declare the vegetation handling functions: */
 			fragmentDeclarations+="\
 				void addVegetationColor(in vec2,inout vec4);\n";
 			
-			/* Compile the water handling shader: */
+			/* Compile the vegetation handling shader: */
 			shaders.push_back(compileFragmentShader("SurfaceAddVegetationColor"));
 		
 			/* Call vegetation coloring function from fragment shader's main function: */
@@ -468,6 +468,11 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			*(ulPtr++)=glGetUniformLocationARB(result,"imageTransform");
 			*(ulPtr++)=glGetUniformLocationARB(result,"imageSampler");
 			}
+		else if(waterTable!=0&&showSlope!=0&&slopeColorMap!=0)
+			{
+			*(ulPtr++)=glGetUniformLocationARB(result,"slopeSampler");
+			*(ulPtr++)=glGetUniformLocationARB(result,"slopeColorMapSampler");
+			}
 		else if(elevationColorMap!=0)
 			{
 			/* Query height color mapping uniform variables: */
@@ -495,13 +500,9 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterOpacity");
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterAnimationTime");
 			}
-		if(vegetation!=0)
+		if(waterTable!=0&&vegetation!=0)
 			{
 			*(ulPtr++)=glGetUniformLocationARB(result,"vegetationSampler");
-			}
-		if(showSlope!=0)
-			{
-			*(ulPtr++)=glGetUniformLocationARB(result,"slopeSampler");
 			}
 		*(ulPtr++)=glGetUniformLocationARB(result,"projectionModelviewDepthProjection");
 		}
@@ -603,6 +604,7 @@ SurfaceRenderer::SurfaceRenderer(const DepthImageRenderer* sDepthImageRenderer)
 	 drawContourLines(true),contourLineFactor(1.0f),
 	 showSlope(false),
 	 elevationColorMap(0),
+	 slopeColorMap(0),
 	 image(0),
 	 dem(0),demDistScale(1.0f),
 	 illuminate(false),
@@ -702,6 +704,16 @@ void SurfaceRenderer::setElevationColorMap(ElevationColorMap* newElevationColorM
 	
 	/* Set the elevation color map: */
 	elevationColorMap=newElevationColorMap;
+	}
+	
+void SurfaceRenderer::setSlopeColorMap(ElevationColorMap* newSlopeColorMap)
+	{
+	/* Check if setting this elevation color map invalidates the shader: */
+	if(image==0&&dem==0&&((newSlopeColorMap!=0&&slopeColorMap==0)||(newSlopeColorMap==0&&slopeColorMap!=0)))
+		++surfaceSettingsVersion;
+	
+	/* Set the elevation color map: */
+	slopeColorMap=newSlopeColorMap;
 	}
 
 void SurfaceRenderer::setDem(DEM* newDem)
@@ -849,6 +861,20 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		image->bindTexture(contextData);
 		glUniform1iARB(*(ulPtr++),1);
 		}
+	else if(waterTable!=0&&showSlope!=0&&slopeColorMap!=0)
+		{
+		/* Bind the slope texture: */
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		waterTable->bindSlopeTexture(contextData);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glUniform1iARB(*(ulPtr++),1);
+		
+		/* Bind the height color map texture: */
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		slopeColorMap->bindTexture(contextData);
+		glUniform1iARB(*(ulPtr++),2);
+		}
 	else if(elevationColorMap!=0)
 		{
 		/* Upload the texture mapping plane equation: */
@@ -863,9 +889,9 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 	if(drawContourLines)
 		{
 		/* Bind the pixel corner elevation texture: */
-		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glActiveTextureARB(GL_TEXTURE3_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->contourLineColorTextureObject);
-		glUniform1iARB(*(ulPtr++),2);
+		glUniform1iARB(*(ulPtr++),3);
 		
 		/* Upload the contour line distance factor: */
 		glUniform1fARB(*(ulPtr++),contourLineFactor);
@@ -893,22 +919,22 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		waterTable->uploadWaterTextureTransform(*(ulPtr++));
 		
 		/* Bind the bathymetry texture: */
-		glActiveTextureARB(GL_TEXTURE3_ARB);
+		glActiveTextureARB(GL_TEXTURE4_ARB);
 		waterTable->bindBathymetryTexture(contextData);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-		glUniform1iARB(*(ulPtr++),3);
+		glUniform1iARB(*(ulPtr++),4);
 		
 		/* Bind the quantities texture: */
-		glActiveTextureARB(GL_TEXTURE4_ARB);
+		glActiveTextureARB(GL_TEXTURE5_ARB);
 		waterTable->bindQuantityTexture(contextData);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-		glUniform1iARB(*(ulPtr++),4);
+		glUniform1iARB(*(ulPtr++),5);
 		
 		/* Upload the water grid cell size for normal vector calculation: */
 		glUniformARB<2>(*(ulPtr++),1,waterTable->getCellSize());
@@ -920,26 +946,15 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		glUniform1fARB(*(ulPtr++),GLfloat(animationTime));
 		}
 		
-	if(vegetation!=0)
+	if(waterTable!=0&&vegetation!=0)
 		{
 		/* Bind the vegetation texture: */
-		glActiveTextureARB(GL_TEXTURE5_ARB);
+		glActiveTextureARB(GL_TEXTURE6_ARB);
 		waterTable->bindVegetationTexture(contextData);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
-		glUniform1iARB(*(ulPtr++),5);
-		}
-	if(showSlope!=0)
-		{
-		/* Bind the slope texture: */
-		glActiveTextureARB(GL_TEXTURE6_ARB);
-		waterTable->bindSlopeTexture(contextData);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
 		glUniform1iARB(*(ulPtr++),6);
 		}
 	
@@ -951,20 +966,10 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 	/* Draw the surface: */
 	depthImageRenderer->renderSurfaceTemplate(contextData);
 	
-	/* Unbind the slope texture: */
-	if(showSlope!=0)
+	/* Unbind the vegetation texture: */
+	if(waterTable!=0&&vegetation!=0)
 		{
 		glActiveTextureARB(GL_TEXTURE6_ARB);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
-		}
-	/* Unbind the vegetation texture: */
-	if(vegetation!=0)
-		{
-		glActiveTextureARB(GL_TEXTURE5_ARB);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
@@ -974,13 +979,13 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 	/* Unbind all textures and buffers: */
 	if(waterTable!=0&&dem==0)
 		{
-		glActiveTextureARB(GL_TEXTURE4_ARB);
+		glActiveTextureARB(GL_TEXTURE5_ARB);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
-		glActiveTextureARB(GL_TEXTURE3_ARB);
+		glActiveTextureARB(GL_TEXTURE4_ARB);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -989,7 +994,7 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		}
 	if(drawContourLines)
 		{
-		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glActiveTextureARB(GL_TEXTURE3_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 		}
 	if(dem!=0)
@@ -997,15 +1002,27 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 		}
-	else if(elevationColorMap!=0)
-		{
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		glBindTexture(GL_TEXTURE_1D,0);
-		}
 	else if(image!=0)
 		{
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		}
+	else if(waterTable!=0&&showSlope!=0&&slopeColorMap!=0)
+		{
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glBindTexture(GL_TEXTURE_1D,0);
+		
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		}
+	else if(elevationColorMap!=0)
+		{
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_1D,0);
 		}
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);

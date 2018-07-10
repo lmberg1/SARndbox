@@ -109,6 +109,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "LocalWaterTool.h"
 #include "DEMTool.h"
 #include "ImageTool.h"
+#include "SlopeTool.h"
 #include "BathymetrySaverTool.h"
 #include "EarthquakeTool.h"
 #include "EarthquakeManager.h"
@@ -164,6 +165,7 @@ Sandbox::RenderSettings::RenderSettings(void)
 	 hillshade(false),surfaceMaterial(GLMaterial::Color(1.0f,1.0f,1.0f)),
 	 useShadows(false),
 	 elevationColorMap(0),
+	 slopeColorMap(0),
 	 useContourLines(true),contourLineSpacing(0.75f),
 	 renderWaterSurface(false),waterOpacity(2.0f),
 	 useVegetation(false),
@@ -179,6 +181,7 @@ Sandbox::RenderSettings::RenderSettings(const Sandbox::RenderSettings& source)
 	 hillshade(source.hillshade),surfaceMaterial(source.surfaceMaterial),
 	 useShadows(source.useShadows),
 	 elevationColorMap(source.elevationColorMap!=0?new ElevationColorMap(*source.elevationColorMap):0),
+	 slopeColorMap(source.slopeColorMap!=0?new ElevationColorMap(*source.slopeColorMap):0),
 	 useContourLines(source.useContourLines),contourLineSpacing(source.contourLineSpacing),
 	 renderWaterSurface(source.renderWaterSurface),waterOpacity(source.waterOpacity),
 	 useVegetation(source.useVegetation),
@@ -192,6 +195,7 @@ Sandbox::RenderSettings::~RenderSettings(void)
 	delete surfaceRenderer;
 	delete waterRenderer;
 	delete elevationColorMap;
+	delete slopeColorMap;
 	}
 
 void Sandbox::RenderSettings::loadProjectorTransform(const char* projectorTransformName)
@@ -240,6 +244,22 @@ void Sandbox::RenderSettings::loadHeightMap(const char* heightMapName)
 		/* Delete the previous elevation color map and assign the new one: */
 		delete elevationColorMap;
 		elevationColorMap=newElevationColorMap;
+		}
+	catch(std::runtime_error err)
+		{
+		std::cerr<<"Ignoring height map due to exception "<<err.what()<<std::endl;
+		}
+	}
+void Sandbox::RenderSettings::loadSlopeMap(const char* heightMapName)
+	{
+	try
+		{
+		/* Load the elevation color map of the given name: */
+		ElevationColorMap* newSlopeColorMap=new ElevationColorMap(heightMapName);
+		
+		/* Delete the previous elevation color map and assign the new one: */
+		delete slopeColorMap;
+		slopeColorMap=newSlopeColorMap;
 		}
 	catch(std::runtime_error err)
 		{
@@ -307,6 +327,17 @@ void Sandbox::toggleImage(Image* image)
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		if(rsIt->fixProjectorView)
 			rsIt->surfaceRenderer->setImage(activeImage);
+	}
+	
+void Sandbox::toggleSlope(void)
+	{
+	/* Enable slope matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
+	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		if(rsIt->fixProjectorView)
+			{
+			rsIt->showSlope=!rsIt->showSlope;
+			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+			}
 	}
 
 void Sandbox::addWater(GLContextData& contextData) const
@@ -439,9 +470,10 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	waterSpeedSlider->getTextField()->setFieldWidth(7);
 	waterSpeedSlider->getTextField()->setPrecision(4);
 	waterSpeedSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	waterSpeedSlider->setSliderMapping(GLMotif::TextFieldSlider::EXP10);
-	waterSpeedSlider->setValueRange(0.001,10.0,0.05);
-	waterSpeedSlider->getSlider()->addNotch(0.0f);
+	waterSpeedSlider->setSliderMapping(GLMotif::TextFieldSlider::LINEAR);
+	waterSpeedSlider->setValueType(GLMotif::TextFieldSlider::UINT);
+	waterSpeedSlider->setValueRange(0.0,10.0,0.05);
+	waterSpeedSlider->getSlider()->addNotch(1.0);
 	waterSpeedSlider->setValue(waterSpeed);
 	waterSpeedSlider->getValueChangedCallbacks().add(this,&Sandbox::waterSpeedSliderCallback);
 	
@@ -530,7 +562,7 @@ GLMotif::PopupWindow* Sandbox::createEarthquakeControlDialog(void)
 	earthquakeStrengthSlider->getTextField()->setFieldWidth(7);
 	earthquakeStrengthSlider->getTextField()->setPrecision(4);
 	earthquakeStrengthSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	waterSpeedSlider->setValueRange(0.0,100.0,0.5);
+	earthquakeStrengthSlider->setValueRange(0.0,100.0,0.5);
 	earthquakeStrengthSlider->getSlider()->addNotch(earthquakeManager->getEarthquakePerturbation());
 	earthquakeStrengthSlider->setValue(earthquakeManager->getEarthquakePerturbation());
 	earthquakeStrengthSlider->getValueChangedCallbacks().add(this,&Sandbox::earthquakeStrengthSliderCallback);
@@ -854,6 +886,16 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					{
 					/* Load the default height color map: */
 					renderSettings.back().loadHeightMap(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
+					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+					}
+				}
+			else if(strcasecmp(argv[i]+1,"usm")==0)
+				{
+				if(i+1<argc&&argv[i+1][0]!='-')
+					{
+					/* Load the slope color map file specified in the next argument: */
+					++i;
+					renderSettings.back().loadSlopeMap(argv[i]);
 					}
 				}
 			else if(strcasecmp(argv[i]+1,"ncl")==0)
@@ -1070,6 +1112,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rsIt->surfaceRenderer->setDrawContourLines(rsIt->useContourLines);
 		rsIt->surfaceRenderer->setContourLineDistance(rsIt->contourLineSpacing);
 		rsIt->surfaceRenderer->setElevationColorMap(rsIt->elevationColorMap);
+		rsIt->surfaceRenderer->setSlopeColorMap(rsIt->slopeColorMap);
 		rsIt->surfaceRenderer->setIlluminate(rsIt->hillshade);
 		rsIt->surfaceRenderer->setVegetation(rsIt->useVegetation);
 		rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
@@ -1113,6 +1156,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	LocalWaterTool::initClass(*Vrui::getToolManager());
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
+	SlopeTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
@@ -1215,10 +1259,13 @@ void Sandbox::frame(void)
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		rsIt->surfaceRenderer->setAnimationTime(Vrui::getApplicationTime());
 
-	/* Update all height color maps: */
+	/* Update all color maps: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
-	        if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
-	
+		{
+	      if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
+	      if(rsIt->slopeColorMap!=0) rsIt->slopeColorMap->load(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+		}
+		
 	/* Check if there is a control command on the control pipe: */
 	if(controlPipeFd>=0)
 		{

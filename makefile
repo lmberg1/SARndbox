@@ -165,6 +165,7 @@ SARNDBOX_SOURCES = FrameFilter.cpp \
                    EarthquakeManager.cpp \
                    Image.cpp \
                    ImageTool.cpp \
+                   SlopeTool.cpp \
                    Sandbox.cpp
 
 $(EXEDIR)/SARndbox: $(SARNDBOX_SOURCES:%.cpp=$(OBJDIR)/%.o)

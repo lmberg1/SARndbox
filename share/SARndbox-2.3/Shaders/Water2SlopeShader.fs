@@ -38,7 +38,7 @@ float slope(in float b0, in float b1, in float b2, in float cellSize)
 	float dMin=min(min(d01,d02),d12);
 	float dMax=max(max(d01,d02),d12);
 	
-	/* Assemble the result vector: */
+	/* Assemble the result: */
 	float result;
 	result=dMin>0.0?dMin:dMax<0.0?dMax:0.0;
 	
@@ -53,12 +53,14 @@ void main()
 	float b2=texture2DRect(bathymetrySampler,gl_FragCoord.xy).r;
 	float b3=texture2DRect(bathymetrySampler,vec2(gl_FragCoord.x+1.0,gl_FragCoord.y)).r;
 	float b4=texture2DRect(bathymetrySampler,vec2(gl_FragCoord.x,gl_FragCoord.y+1.0)).r;
-	
+
 	/* Calculate the x-direction slope: */
 	float slopeX=slope(b1, b2, b3, cellSize.x);
 	
 	/* Calculate the y-direction slope: */
-	float slopeY=slope(b0, b2, b4, cellSize.x);
+	float slopeY=slope(b0, b2, b4, cellSize.y);
 	
-	gl_FragColor=vec4(max(slopeX, slopeY), 0.0, 0.0, 0.0);
+	float maxSlope=max(slopeX, slopeY);
+	
+	gl_FragColor=vec4(maxSlope, 0.0, 0.0, 0.0);
 	}

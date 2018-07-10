@@ -104,6 +104,7 @@ class Sandbox:public Vrui::Application,public GLObject
 		GLMaterial surfaceMaterial; // Material properties to render the surface in hill shading mode
 		bool useShadows; // Flag whether to use shadows in augmented reality hill shading
 		ElevationColorMap* elevationColorMap; // Pointer to an elevation color map
+		ElevationColorMap* slopeColorMap; // Pointer to an elevation color map
 		bool useContourLines; // Flag whether to draw elevation contour lines
 		GLfloat contourLineSpacing; // Spacing between adjacent contour lines in cm
 		bool renderWaterSurface; // Flag whether to render the water surface as a geometric surface
@@ -121,12 +122,15 @@ class Sandbox:public Vrui::Application,public GLObject
 		/* Methods: */
 		void loadProjectorTransform(const char* projectorTransformName); // Loads a projector transformation from the given file
 		void loadHeightMap(const char* heightMapName); // Loads the selected height map
+		void loadSlopeMap(const char* heightMapName); // Loads the selected height map
+		
 		};
 	
 	friend class GlobalWaterTool;
 	friend class LocalWaterTool;
 	friend class DEMTool;
 	friend class ImageTool;
+	friend class SlopeTool;
 	
 	/* Elements: */
 	private:
@@ -173,6 +177,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	void receiveFilteredFrame(const Kinect::FrameBuffer& frameBuffer); // Callback receiving filtered depth frames from the filter object
 	void toggleDEM(DEM* dem); // Sets or toggles the currently active DEM
 	void toggleImage(Image* image); // Sets or toggles the currently active image
+	void toggleSlope(void);
 	void addWater(GLContextData& contextData) const; // Function to render geometry that adds water to the water table
 	void pauseUpdatesCallback(GLMotif::ToggleButton::ValueChangedCallbackData* cbData);
 	void showWaterControlDialogCallback(Misc::CallbackData* cbData);
