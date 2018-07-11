@@ -128,6 +128,8 @@ class WaterTable2:public GLObject
 	GLfloat waterDeposit; // A fixed amount of water added at every iteration of the flow simulation, for evaporation etc.
 	GLfloat baseWaterLevel; // Base water level relative to the base plane
 	GLfloat oldBaseWaterLevel; // Previous base water level relative to the base plane
+	int numBathymetryCalls; // Keep track of number of calls to updateBathymetry until minBathymetryCalls
+	int minNumBathymetryCalls; // Minimum number of calls to updateBathymetry to fully initialize sandbox bathymetry
 	bool dryBoundary; // Flag whether to enforce dry boundary conditions at the end of each simulation step
 	unsigned int readBathymetryRequest; // Request token to read back the current bathymetry grid from the GPU
 	mutable GLfloat* readBathymetryBuffer; // Buffer into which to read the current bathymetry grid
@@ -199,7 +201,7 @@ class WaterTable2:public GLObject
 		}
 	void setWaterDeposit(GLfloat newWaterDeposit); // Sets the amount of deposited water
 	void setDryBoundary(bool newDryBoundary); // Enables or disables enforcement of dry boundaries
-	void updateBathymetry(GLContextData& contextData) const; // Prepares the water table for subsequent calls to the runSimulationStep() method
+	void updateBathymetry(GLContextData& contextData); // Prepares the water table for subsequent calls to the runSimulationStep() method
 	void updateBathymetry(const GLfloat* bathymetryGrid,GLContextData& contextData) const; // Updates the bathymetry directly with a vertex-centered elevation grid of grid size minus 1
 	void setWaterLevel(const GLfloat* waterGrid,GLContextData& contextData) const; // Sets the current water level to the given grid, and resets flux components to zero
 	GLfloat runSimulationStep(bool forceStepSize,GLContextData& contextData) const; // Runs a water flow simulation step, always uses maxStepSize if flag is true (may lead to instability); returns step size taken by Runge-Kutta integration step
@@ -219,6 +221,10 @@ class WaterTable2:public GLObject
 	bool haveBathymetry(void) const // Returns true if the most recent bathymetry request has been fulfilled
 		{
 		return readBathymetryReply==readBathymetryRequest;
+		}
+	bool bathymetryIsInitialized(void)
+		{
+		return numBathymetryCalls==minNumBathymetryCalls;
 		}
 	};
 

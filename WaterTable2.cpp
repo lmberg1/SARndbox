@@ -336,10 +336,21 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
+	baseWaterLevel=-100.0f;
+	oldBaseWaterLevel=-100.0f;
+	
+	/* Initialize the vegetation simulation parameters: */
+	hydrationRange = height * 0.1625f;
+	detectionThreshold = 0.1f;
+	hydrationVelocity = 0.1f;
+	hydrationStepSize = 2.0f;
+	vegStart = 0.2f;
+	vegEnd = 0.8f;
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* sDepthImageRenderer,const Point basePlaneCorners[4])
 	:depthImageRenderer(sDepthImageRenderer),
+	 numBathymetryCalls(0), minNumBathymetryCalls(30), 
 	 dryBoundary(true),
 	 readBathymetryRequest(0U),readBathymetryBuffer(0),readBathymetryReply(0U)
 	{
@@ -392,7 +403,9 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	maxStepSize=1.0f;
 	
 	/* Initialize the water deposit amount: */
-	waterDeposit=0.0f;
+	waterDeposit=1.0f;
+	baseWaterLevel=-100.0f;
+	oldBaseWaterLevel=-100.0f;
 	
 	/* Initialize the vegetation simulation parameters: */
 	hydrationRange = height * 0.1625f;
@@ -856,7 +869,7 @@ void WaterTable2::setDryBoundary(bool newDryBoundary)
 	dryBoundary=newDryBoundary;
 	}
 
-void WaterTable2::updateBathymetry(GLContextData& contextData) const
+void WaterTable2::updateBathymetry(GLContextData& contextData)
 	{
 	/* Get the data item: */
 	DataItem* dataItem=contextData.retrieveDataItem<DataItem>(this);
@@ -963,6 +976,7 @@ void WaterTable2::updateBathymetry(GLContextData& contextData) const
 		dataItem->currentBathymetry=1-dataItem->currentBathymetry;
 		dataItem->bathymetryVersion=depthImageRenderer->getDepthImageVersion();
 		dataItem->currentQuantity=1-dataItem->currentQuantity;
+		if (numBathymetryCalls < minNumBathymetryCalls) numBathymetryCalls += 1;
 		}
 	}
 

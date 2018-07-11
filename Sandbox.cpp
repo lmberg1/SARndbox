@@ -110,6 +110,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "DEMTool.h"
 #include "ImageTool.h"
 #include "SlopeTool.h"
+#include "WaterLevelTool.h"
 #include "BathymetrySaverTool.h"
 #include "EarthquakeTool.h"
 #include "EarthquakeManager.h"
@@ -405,7 +406,7 @@ void Sandbox::waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChan
 
 void Sandbox::baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	waterTable->setBaseWaterLevel(GLfloat(cbData->value));
+	baseWaterLevel = GLfloat(cbData->value);
 	}
 	
 void Sandbox::earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
@@ -521,8 +522,8 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	baseWaterLevelSlider->getTextField()->setPrecision(4);
 	baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
 	baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
-	baseWaterLevelSlider->getSlider()->addNotch(double(waterTable->getBaseWaterLevel()));
-	baseWaterLevelSlider->setValue(double(waterTable->getBaseWaterLevel()));
+	baseWaterLevelSlider->getSlider()->addNotch(double(baseWaterLevel));
+	baseWaterLevelSlider->setValue(double(baseWaterLevel));
 	baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
 	
 	waterControlDialog->manageChild();
@@ -723,7 +724,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	Math::Interval<double> rainElevationRange=cfg.retrieveValue<Math::Interval<double> >("./rainElevationRange",Math::Interval<double>(-1000.0,1000.0));
 	rainStrength=cfg.retrieveValue<GLfloat>("./rainStrength",0.25f);
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
-	GLfloat baseWaterLevel=-1.0f;
+	baseWaterLevel=-1.0f;
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
 	
@@ -1082,8 +1083,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
 		waterTable->setWaterDeposit(evaporationRate);
 
-		/* Set up base water level */		
-		waterTable->setBaseWaterLevel(baseWaterLevel);
+		/* Set up base water level */
 		if(baseWaterLevelSlider!=0)
 			baseWaterLevelSlider->setValue(baseWaterLevel);
 		
@@ -1157,6 +1157,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
 	SlopeTool::initClass(*Vrui::getToolManager());
+	WaterLevelTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
@@ -1413,6 +1414,9 @@ void Sandbox::display(GLContextData& contextData) const
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();
 		}
+		
+	if (waterTable->bathymetryIsInitialized())
+		waterTable->setBaseWaterLevel(baseWaterLevel);
 	
 	/* Calculate the projection matrix: */
 	PTransform projection=ds.projection;

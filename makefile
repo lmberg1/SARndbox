@@ -166,6 +166,7 @@ SARNDBOX_SOURCES = FrameFilter.cpp \
                    Image.cpp \
                    ImageTool.cpp \
                    SlopeTool.cpp \
+                   WaterLevelTool.cpp \
                    Sandbox.cpp
 
 $(EXEDIR)/SARndbox: $(SARNDBOX_SOURCES:%.cpp=$(OBJDIR)/%.o)

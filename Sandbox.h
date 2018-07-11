@@ -131,6 +131,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	friend class DEMTool;
 	friend class ImageTool;
 	friend class SlopeTool;
+	friend class WaterLevelTool;
 	
 	/* Elements: */
 	private:
@@ -149,6 +150,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	double waterSpeed; // Relative speed of water flow simulation
 	unsigned int waterMaxSteps; // Maximum number of water simulation steps per frame
 	GLfloat rainStrength; // Amount of water deposited by rain tools and objects on each water simulation step
+	GLfloat baseWaterLevel; // Base water level in the sandbox
 	HandExtractor* handExtractor; // Object to detect splayed hands above the sand surface to make rain
 	const AddWaterFunction* addWaterFunction; // Render function registered with the water table
 	bool addWaterFunctionRegistered; // Flag if the water adding function is currently registered with the water table
@@ -177,7 +179,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	void receiveFilteredFrame(const Kinect::FrameBuffer& frameBuffer); // Callback receiving filtered depth frames from the filter object
 	void toggleDEM(DEM* dem); // Sets or toggles the currently active DEM
 	void toggleImage(Image* image); // Sets or toggles the currently active image
-	void toggleSlope(void);
+	void toggleSlope(void); // Toggle the slope view
 	void addWater(GLContextData& contextData) const; // Function to render geometry that adds water to the water table
 	void pauseUpdatesCallback(GLMotif::ToggleButton::ValueChangedCallbackData* cbData);
 	void showWaterControlDialogCallback(Misc::CallbackData* cbData);

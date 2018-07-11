@@ -47,9 +47,21 @@ void main()
 	# if 0
 	gl_FragColor=vec4(max(q.x-bOld,0.0)+bNew,q.yz,0.0);
 	# else
-	float height = max(q.x-bOld, 0.0)+bNew;
+	float x = gl_FragCoord.x;
+	float y = gl_FragCoord.y;
+	float waterLevel = max(q.x-bOld, 0.0);
+	float height = bNew + waterLevel;
 	float xVal = max(height, baseWaterLevel);
-	//if (oldBaseWaterLevel > baseWaterLevel) xVal = min(height, baseWaterLevel);
+	if (oldBaseWaterLevel != baseWaterLevel)
+		{
+		// check if this is the first time baseWaterLevel has been set
+		if (oldBaseWaterLevel == -100.0f) xVal = baseWaterLevel;
+		// add water to coordinate if height is less than baseWaterLevel
+		// remove water from all coordinates if baseWaterLevel has decreased
+		else if (bNew < baseWaterLevel || baseWaterLevel < oldBaseWaterLevel) 
+			xVal = height + (baseWaterLevel-oldBaseWaterLevel);
+		}
+	if (x < 2 || x > 638 || y < 2 || y > 478) xVal = max(height, baseWaterLevel);
 	gl_FragColor=vec4(xVal,q.yz,0.0);
 	#endif
 	}
