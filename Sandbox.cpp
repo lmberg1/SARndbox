@@ -1392,7 +1392,9 @@ void Sandbox::display(GLContextData& contextData) const
 			}
 		else {
 			waterTable->updateBathymetry(contextData);
+		
 		}
+		
 		/* Run the water flow simulation's main pass: */
 		GLfloat totalTimeStep=GLfloat(Vrui::getFrameTime()*waterSpeed);
 		unsigned int numSteps=0;
@@ -1413,10 +1415,10 @@ void Sandbox::display(GLContextData& contextData) const
 		
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();
-		}
 		
-	if (waterTable->bathymetryIsInitialized())
-		waterTable->setBaseWaterLevel(baseWaterLevel);
+		if (waterTable->bathymetryIsInitialized())
+			waterTable->setBaseWaterLevel(baseWaterLevel);
+		}
 	
 	/* Calculate the projection matrix: */
 	PTransform projection=ds.projection;
