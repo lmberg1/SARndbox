@@ -42,6 +42,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <GL/GLContextData.h>
 #include <GL/GLTransformationWrappers.h>
 
+#include <stdlib.h>
+#include <time.h>
+
 #include "DepthImageRenderer.h"
 #include "ShaderHelper.h"
 
@@ -84,7 +87,7 @@ WaterTable2::DataItem::DataItem(void)
 	 derivativeTextureObject(0),waterTextureObject(0),
 	 bathymetryFramebufferObject(0),derivativeFramebufferObject(0),maxStepSizeFramebufferObject(0),integrationFramebufferObject(0),waterFramebufferObject(0),
 	 bathymetryShader(0),waterAdaptShader(0),derivativeShader(0),maxStepSizeShader(0),boundaryShader(0),eulerStepShader(0),rungeKuttaStepShader(0),waterAddShader(0),waterShader(0), 
-	 vegetationTextureObject(0),currentHydration(0),
+	 vegetationTextureObject(0),currentHydration(0), randomTextureObject(0),
 	 vegetationFramebufferObject(0),hydrationFramebufferObject(0),
 	 vegetationShader(0),hydrationShader(0),
 	 slopeTextureObject(0), slopeFramebufferObject(0), slopeShader(0)
@@ -121,6 +124,7 @@ WaterTable2::DataItem::~DataItem(void)
 	glDeleteTextures(1,&vegetationTextureObject);
 	glDeleteTextures(2,hydrationTextureObjects);
 	glDeleteTextures(1, &slopeTextureObject);
+	glDeleteTextures(1, &randomTextureObject);
 	glDeleteFramebuffersEXT(1,&bathymetryFramebufferObject);
 	glDeleteFramebuffersEXT(1,&derivativeFramebufferObject);
 	glDeleteFramebuffersEXT(1,&maxStepSizeFramebufferObject);
@@ -146,6 +150,14 @@ WaterTable2::DataItem::~DataItem(void)
 /****************************
 Methods of class WaterTable2:
 ****************************/
+
+void WaterTable2::loadRandomGrid() 
+	{
+	randomGrid = new float[size[0]*size[1]];
+	
+	for (int i = 0; i < size[0]*size[1]; i++)
+		randomGrid[i] = ((float) rand())/((float) RAND_MAX);
+	}
 
 void WaterTable2::calcTransformations(void)
 	{
@@ -306,11 +318,14 @@ GLfloat WaterTable2::calcDerivative(WaterTable2::DataItem* dataItem,GLuint quant
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2])
-	:depthImageRenderer(0),
+	:depthImageRenderer(0), randomGrid(0),
 	 baseTransform(ONTransform::identity),
 	 dryBoundary(true),
 	 readBathymetryRequest(0U),readBathymetryBuffer(0),readBathymetryReply(0U)
 	{
+	/* Seed random function */
+	srand(time(NULL));
+	
 	/* Initialize the water table size and cell size: */
 	size[0]=width;
 	size[1]=height;
@@ -346,6 +361,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	hydrationStepSize = 2.0f;
 	vegStart = 0.2f;
 	vegEnd = 0.8f;
+	vegGrowthRate = 10.0f;
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* sDepthImageRenderer,const Point basePlaneCorners[4])
@@ -357,6 +373,8 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	/* Initialize the water table size: */
 	size[0]=width;
 	size[1]=height;
+	
+	loadRandomGrid();
 	
 	/* Project the corner points to the base plane and calculate their centroid: */
 	const Plane& basePlane=depthImageRenderer->getBasePlane();
@@ -414,10 +432,12 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	hydrationStepSize = 2.0f;
 	vegStart = 0.2f;
 	vegEnd = 0.8f;
+	vegGrowthRate = 10.0f;
 	}
 
 WaterTable2::~WaterTable2(void)
 	{
+	delete[] randomGrid;
 	}
 
 void WaterTable2::initContext(GLContextData& contextData) const
@@ -458,10 +478,6 @@ void WaterTable2::initContext(GLContextData& contextData) const
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_LUMINANCE,GL_FLOAT,h);
 		}
 	delete[] h;
-	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR) {
-		printf("Open GL error: %u\n", err);
-	}
 	}
 	
 	{
@@ -523,6 +539,19 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	}
 	
 	{
+	/* Create the cell-centered random texture: */
+	glGenTextures(1,&dataItem->randomTextureObject);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->randomTextureObject);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_WRAP_T,GL_CLAMP);
+	GLfloat* r=makeBuffer(size[0],size[1],1,0.0);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,r);
+	delete[] r;
+	}
+	
+	{
 	/* Create the cell-centered water texture: */
 	glGenTextures(1,&dataItem->waterTextureObject);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->waterTextureObject);
@@ -546,10 +575,6 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	GLfloat* v=makeBuffer(size[0],size[1],1,0.0);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,0,GL_R32F,size[0],size[1],0,GL_RED,GL_FLOAT,v);
 	delete[] v;
-	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR) {
-		printf("Open GL error: %u\n", err);
-	}
 	}
 	
 	/* Protect the newly-created textures: */
@@ -649,7 +674,6 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	/* Attach the hydration texture to the hydration frame buffer: */
 	for(int i=0;i<2;++i)
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT+i,GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[i],0);
-	//glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObject,0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	}
@@ -793,9 +817,12 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	dataItem->vegetationShader=glLinkShader(vertexShader,fragmentShader);
 	glDeleteObjectARB(vertexShader);
 	glDeleteObjectARB(fragmentShader);
-	dataItem->vegetationShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->vegetationShader,"hydrationSampler");
-	dataItem->vegetationShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->vegetationShader,"vegStart");
-	dataItem->vegetationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->vegetationShader,"vegEnd");
+	dataItem->vegetationShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->vegetationShader,"vegetationSampler");
+	dataItem->vegetationShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->vegetationShader,"hydrationSampler");
+	dataItem->vegetationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->vegetationShader,"randomSampler");
+	dataItem->vegetationShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->vegetationShader,"growthRate");
+	dataItem->vegetationShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->vegetationShader,"color");
+	
 	}
 	
 	/* Create the hydration shader: */
@@ -855,6 +882,24 @@ void WaterTable2::removeRenderFunction(const AddWaterFunction* removeRenderFunct
 			{
 			/* Remove the list element: */
 			renderFunctions.erase(rfIt);
+			break;
+			}
+	}
+	
+void WaterTable2::addVegetationRenderFunction(const AddWaterFunction* newRenderFunction)
+	{
+	/* Store the new render function: */
+	renderVegetationFunctions.push_back(newRenderFunction);
+	}
+
+void WaterTable2::removeVegetationRenderFunction(const AddWaterFunction* removeRenderFunction)
+	{
+	/* Find the given render function in the list and remove it: */
+	for(std::vector<const AddWaterFunction*>::iterator rfIt=renderVegetationFunctions.begin();rfIt!=renderVegetationFunctions.end();++rfIt)
+		if(*rfIt==removeRenderFunction)
+			{
+			/* Remove the list element: */
+			renderVegetationFunctions.erase(rfIt);
 			break;
 			}
 	}
@@ -1190,7 +1235,7 @@ GLfloat WaterTable2::runSimulationStep(bool forceStepSize,GLContextData& context
 	/* Update the current quantities: */
 	dataItem->currentQuantity=1-dataItem->currentQuantity;
 	
-	if(waterDeposit!=0.0f||!renderFunctions.empty())
+	if((waterDeposit!=0.0f||!renderFunctions.empty()))
 		{
 		/* Save OpenGL state: */
 		GLfloat currentClearColor[4];
@@ -1279,7 +1324,7 @@ GLfloat WaterTable2::runSimulationStep(bool forceStepSize,GLContextData& context
 	return stepSize;
 	}
 	
-void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
+void WaterTable2::runVegetationSimulation(GLContextData& contextData)
 	{
 	/* Get the data item: */
 	DataItem* dataItem=contextData.retrieveDataItem<DataItem>(this);
@@ -1326,30 +1371,13 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
 	dataItem->currentHydration=1-dataItem->currentHydration;
 	
 	/*********************************************************************
-	Step 2: Check for dry boundary.
+	Step 2: Calculate updated vegetation.
 	*********************************************************************/
 	
-	if(dryBoundary)
-		{
-		/* Set up the boundary condition shader to enforce dry boundaries: */
-		glUseProgramObjectARB(dataItem->boundaryShader);
-		glActiveTextureARB(GL_TEXTURE0_ARB);
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[dataItem->currentBathymetry]);
-		glUniform1iARB(dataItem->boundaryShaderUniformLocations[0],0);
-		
-		/* Run the boundary condition shader on the outermost layer of pixels: */
-		glBegin(GL_LINE_LOOP);
-		glVertex2f(0.5f,0.5f);
-		glVertex2f(GLfloat(size[0])-0.5f,0.5f);
-		glVertex2f(GLfloat(size[0])-0.5f,GLfloat(size[1])-0.5f);
-		glVertex2f(0.5f,GLfloat(size[1])-0.5f);
-		glEnd();
-		}
+	/* Create new random grid and random number to determine color */
+	loadRandomGrid();
+	GLfloat color = (rand() % 30)/30.0 + 0.25;
 	
-	/*********************************************************************
-	Step 3: Calculate updated vegetation.
-	*********************************************************************/
-
 	/* Bind the vegetation rendering frame buffer */
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->vegetationFramebufferObject);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
@@ -1358,10 +1386,20 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
 	/* Set up the vegetation update shader: */
 	glUseProgramObjectARB(dataItem->vegetationShader);
 	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[dataItem->currentHydration]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
 	glUniform1iARB(dataItem->vegetationShaderUniformLocations[0],0);
-	glUniformARB(dataItem->vegetationShaderUniformLocations[1],vegStart);
-	glUniformARB(dataItem->vegetationShaderUniformLocations[2],vegEnd);
+	glActiveTextureARB(GL_TEXTURE1_ARB);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[dataItem->currentHydration]);
+	glUniform1iARB(dataItem->vegetationShaderUniformLocations[1],1);
+	
+	/* Upload the random grid */
+	glActiveTextureARB(GL_TEXTURE2_ARB);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->randomTextureObject);
+	glUniform1iARB(dataItem->vegetationShaderUniformLocations[2],2);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB,0,0,0,size[0],size[1],GL_RED,GL_FLOAT,randomGrid);
+	
+	glUniformARB(dataItem->vegetationShaderUniformLocations[3],vegGrowthRate);
+	glUniformARB(dataItem->vegetationShaderUniformLocations[4],color);
 	
 	/* Run the vegetation update: */
 	glBegin(GL_QUADS);
@@ -1370,6 +1408,43 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData) const
 	glVertex2i(size[0]-1,size[1]-1);
 	glVertex2i(0,size[1]-1);
 	glEnd();
+		
+	if (!renderVegetationFunctions.empty())
+		{
+		/* Save OpenGL state: */
+		GLfloat currentClearColor[4];
+		glGetFloatv(GL_COLOR_CLEAR_VALUE,currentClearColor);
+	
+		/*******************************************************************
+		Step 3: Render all vegetation sources and sinks additively into the
+		vegetation texture.
+		*******************************************************************/
+	
+		/* Set up the vegetation frame buffer: */
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->vegetationFramebufferObject);
+		glViewport(0,0,size[0],size[1]);
+	
+		/* Enable additive rendering: */
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE,GL_ONE);
+	
+		/* Set up the water adding shader: */
+		glUseProgramObjectARB(dataItem->waterAddShader);
+		glUniformMatrix4fvARB(dataItem->waterAddShaderUniformLocations[0],1,GL_FALSE,waterAddPmvMatrix);
+		glUniform1fARB(dataItem->waterAddShaderUniformLocations[1],30.0);
+	
+		/* Bind the vegetation texture: */
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
+		glUniform1iARB(dataItem->waterAddShaderUniformLocations[2],0);
+	
+		/* Call all render functions: */
+		for(std::vector<const AddWaterFunction*>::const_iterator rfIt=renderVegetationFunctions.begin();rfIt!=renderVegetationFunctions.end();++rfIt)
+			(**rfIt)(contextData);
+		
+		/* Restore OpenGL state: */
+		glDisable(GL_BLEND);
+		}
 		
 	/* Unbind all shaders and textures: */
 	glUseProgramObjectARB(0);

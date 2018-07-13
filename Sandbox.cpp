@@ -111,6 +111,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "ImageTool.h"
 #include "SlopeTool.h"
 #include "WaterLevelTool.h"
+#include "AddVegetationTool.h"
 #include "BathymetrySaverTool.h"
 #include "EarthquakeTool.h"
 #include "EarthquakeManager.h"
@@ -1158,6 +1159,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	ImageTool::initClass(*Vrui::getToolManager());
 	SlopeTool::initClass(*Vrui::getToolManager());
 	WaterLevelTool::initClass(*Vrui::getToolManager());
+	AddVegetationTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());

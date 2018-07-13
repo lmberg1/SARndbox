@@ -61,7 +61,7 @@ void main()
 		else if (bNew < baseWaterLevel || baseWaterLevel < oldBaseWaterLevel) 
 			xVal = height + (baseWaterLevel-oldBaseWaterLevel);
 		}
-	if (x < 2 || x > 638 || y < 2 || y > 478) xVal = max(height, baseWaterLevel);
+	if (x < 4 || x > 636 || y < 4 || y > 476) xVal = max(height, baseWaterLevel);
 	gl_FragColor=vec4(xVal,q.yz,0.0);
 	#endif
 	}

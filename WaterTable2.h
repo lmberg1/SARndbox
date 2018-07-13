@@ -89,20 +89,20 @@ class WaterTable2:public GLObject
 		GLuint vegetationTextureObject; // One-component float color texture object holding the vertex-centered vegetation grid
 		GLuint hydrationTextureObjects[2]; // Double-buffered one-component float color texture object holding the vertex-centered hydration grid
 		int currentHydration; // Index of hydration texture containing the most recent hydration grid
+		GLuint randomTextureObject; // One-component float texture object holding random values between 0 and 1
 		GLuint vegetationFramebufferObject; // Frame buffer used for hydration computation
 		GLuint hydrationFramebufferObject; // Frame buffer used for vegetation computation
 		GLhandleARB vegetationShader; // Shader to update cell-centered vegetation values
-		GLint vegetationShaderUniformLocations[3];
+		GLint vegetationShaderUniformLocations[6];
 		GLhandleARB hydrationShader; // Shader to compute hydration values
 		GLint hydrationShaderUniformLocations[7];
 		
 		/* Slope shaders */
-		GLuint slopeTextureObject;
-		GLuint slopeFramebufferObject;
-		GLint slopeShader;
+		GLuint slopeTextureObject; // One-component float color texture object holding the vertex-centered slope grid
+		GLuint slopeFramebufferObject; // Frame buffer used for slope computation
+		GLint slopeShader; // Shader to compute slope values
 		GLint slopeShaderUniformLocations[3];
 
-		
 		/* Constructors and destructors: */
 		DataItem(void);
 		virtual ~DataItem(void);
@@ -111,6 +111,7 @@ class WaterTable2:public GLObject
 	/* Elements: */
 	GLsizei size[2]; // Width and height of water table in pixels
 	const DepthImageRenderer* depthImageRenderer; // Renderer object used to update the water table's bathymetry grid
+	float* randomGrid; // A random grid of float values between 0 and 1 of water table size
 	ONTransform baseTransform; // Transformation from camera space to upright elevation map space
 	Box domain; // Domain of elevation map space in rotated camera space
 	GLfloat cellSize[2]; // Width and height of water table cells in world coordinate units
@@ -125,6 +126,7 @@ class WaterTable2:public GLObject
 	PTransform waterTextureTransform; // Projective transformation from camera space to water level texture space
 	GLfloat waterTextureTransformMatrix[16]; // Same in GLSL-compatible format
 	std::vector<const AddWaterFunction*> renderFunctions; // A list of functions that are called after each water flow simulation step to locally add or remove water from the water table
+	std::vector<const AddWaterFunction*> renderVegetationFunctions; // A list of functions that are called after each vegetation simulation step to locally add or remove vegetation
 	GLfloat waterDeposit; // A fixed amount of water added at every iteration of the flow simulation, for evaporation etc.
 	GLfloat baseWaterLevel; // Base water level relative to the base plane
 	GLfloat oldBaseWaterLevel; // Previous base water level relative to the base plane
@@ -140,10 +142,12 @@ class WaterTable2:public GLObject
 	GLfloat detectionThreshold;
 	GLfloat hydrationVelocity;
 	GLfloat hydrationStepSize;
+	GLfloat vegGrowthRate;
 	GLfloat vegStart;
 	GLfloat vegEnd;
 	
 	/* Private methods: */
+	void loadRandomGrid(); // Loads a random grid of water table size into randomGrid
 	void calcTransformations(void); // Calculates derived transformations
 	GLfloat calcDerivative(DataItem* dataItem,GLuint quantityTextureObject,bool calcMaxStepSize) const; // Calculates the temporal derivative of the conserved quantities in the given texture object and returns maximum step size if flag is true
 	
@@ -195,6 +199,8 @@ class WaterTable2:public GLObject
 		}
 	void addRenderFunction(const AddWaterFunction* newRenderFunction); // Adds a render function to the list; object remains owned by caller
 	void removeRenderFunction(const AddWaterFunction* removeRenderFunction); // Removes the given render function from the list but does not delete it
+	void addVegetationRenderFunction(const AddWaterFunction* newRenderFunction); // Adds a render function to the list; object remains owned by caller
+	void removeVegetationRenderFunction(const AddWaterFunction* removeRenderFunction); // Removes the given render function from the list but does not delete it
 	GLfloat getWaterDeposit(void) const // Returns the current amount of water deposited on every simulation step
 		{
 		return waterDeposit;
@@ -206,8 +212,7 @@ class WaterTable2:public GLObject
 	void setWaterLevel(const GLfloat* waterGrid,GLContextData& contextData) const; // Sets the current water level to the given grid, and resets flux components to zero
 	GLfloat runSimulationStep(bool forceStepSize,GLContextData& contextData) const; // Runs a water flow simulation step, always uses maxStepSize if flag is true (may lead to instability); returns step size taken by Runge-Kutta integration step
 	
-	void drawShapes(GLContextData& contextData) const;
-	void runVegetationSimulation(GLContextData& contextData) const; // Runs a vegetation growth simulation step
+	void runVegetationSimulation(GLContextData& contextData); // Runs a vegetation growth simulation step
 	void bindBathymetryTexture(GLContextData& contextData) const; // Binds the bathymetry texture object to the active texture unit
 	void bindQuantityTexture(GLContextData& contextData) const; // Binds the most recent conserved quantities texture object to the active texture unit
 	void bindVegetationTexture(GLContextData& contextData) const; // Binds the vegetation texture object
