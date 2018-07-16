@@ -1123,6 +1123,9 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				/* Create a water renderer: */
 				rsIt->waterRenderer=new WaterRenderer(waterTable);
+				rsIt->surfaceRenderer->setWaterTable(waterTable);
+				rsIt->surfaceRenderer->setAdvectWaterTexture(true);
+				rsIt->surfaceRenderer->setWaterOpacity(rsIt->waterOpacity);
 				}
 			else
 				{
@@ -1153,17 +1156,17 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		}
 	
 	/* Initialize the custom tool classes: */
-	GlobalWaterTool::initClass(*Vrui::getToolManager());
-	LocalWaterTool::initClass(*Vrui::getToolManager());
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
 	SlopeTool::initClass(*Vrui::getToolManager());
-	WaterLevelTool::initClass(*Vrui::getToolManager());
-	AddVegetationTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
 		EarthquakeTool::initClass(waterTable, earthquakeManager, *Vrui::getToolManager());
+		GlobalWaterTool::initClass(*Vrui::getToolManager());
+		LocalWaterTool::initClass(*Vrui::getToolManager());
+		WaterLevelTool::initClass(*Vrui::getToolManager());
+		AddVegetationTool::initClass(*Vrui::getToolManager());
 		}
 	addEventTool("Pause Topography",0,0);
 	
@@ -1209,7 +1212,6 @@ Sandbox::~Sandbox(void)
 	delete handExtractor;
 	delete addWaterFunction;
 	delete[] pixelDepthCorrection;
-	delete earthquakeManager;
 	
 	delete mainMenu;
 	delete waterControlDialog;
@@ -1443,7 +1445,6 @@ void Sandbox::display(GLContextData& contextData) const
 	/* Render the surface in a single pass: */
 	rs.surfaceRenderer->renderSinglePass(ds.viewport,projection,ds.modelviewNavigational,contextData);
 	}
-	
 	
 	if(rs.waterRenderer!=0)
 		{

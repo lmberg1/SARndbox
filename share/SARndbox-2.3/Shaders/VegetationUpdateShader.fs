@@ -34,11 +34,13 @@ void main()
 	{
 	float hydration=texture2DRect(hydrationSampler, gl_FragCoord.xy).r;
 	float vegetation=texture2DRect(vegetationSampler, gl_FragCoord.xy).r;
-	float random=texture2DRect(randomSampler, gl_FragCoord.xy).r;
+	
 	// Vegetation cannot grow if insufficient hydration or if there is already 
 	// vegetation there
-	if (hydration <= 0.01 || vegetation > 0.0) 
-		gl_FragColor=vec4(vegetation,0.0,0.0,0.0);
+	if (hydration <= 0.01) 
+		gl_FragColor=vec4(0.0,0.0,0.0,0.0);
+	else if (vegetation > 0.0)
+		gl_FragColor=vec4(vegetation, 0.0, 0.0, 0.0);
 	else
 		{
 		float x = gl_FragCoord.x;
@@ -52,9 +54,10 @@ void main()
 			{
 			float dist = distBetween(x, y, x+i, y+j);
 			float v = texture2DRect(vegetationSampler, vec2(x+i, y+j)).r;
+			
+			// probability of growth increases with proximity to 
+			// other pieces of vegetation
 			if (dist <= range && v > 0.0)
-				// probability of growth increases with proximity to 
-				// other pieces of vegetation
 				probability = max(probability, (range - dist)/range);
 			}
 	
@@ -64,6 +67,7 @@ void main()
 		
 		// vegetation grows if the random value generated for that pixel
 		// falls under the probability of growth
+		float random=texture2DRect(randomSampler, gl_FragCoord.xy).r;
 		if (random < probability)
 			gl_FragColor=vec4(color,0.0,0.0,0.0);
 		else 
