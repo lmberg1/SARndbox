@@ -117,11 +117,11 @@ void EarthquakeTool::createCircularPerturbation(int center[], int radius, double
 	{
 	GLfloat *pPtr = bathymetryBuffer;
 	/* For all pixel columns */
-	for (int i = 0; i < factory->gridSize[0]; i++) {
+	for (int i = 0; i < factory->gridSize[0]-1; i++) {
 		pPtr = bathymetryBuffer + i;
 		
 		/* Iterate through all values in that column */
-		for (int j = 0; j < factory->gridSize[1]; j++) {
+		for (int j = 0; j < factory->gridSize[1]-1; j++) {
 			pPtr += factory->gridSize[0];
 			
 			/* Perturb the pixel if it's inside the circle */
@@ -139,11 +139,11 @@ void EarthquakeTool::createPlanarPerturbation(int p1[], int p2[], double perturb
 	
 	GLfloat *pPtr = bathymetryBuffer;
 	/* For all pixel columns */
-	for (int i = 0; i < factory->gridSize[0]; i++) {
+	for (int i = 0; i < factory->gridSize[0]-1; i++) {
 		pPtr = bathymetryBuffer + i;
 		
 		/* Iterate through all values in that column */
-		for (int j = 0; j < factory->gridSize[1]; j++) {
+		for (int j = 0; j < factory->gridSize[1]-1; j++) {
 			pPtr += factory->gridSize[0];
 			
 			/* Perturb the pixel if it's inside the plane. Determine the 
