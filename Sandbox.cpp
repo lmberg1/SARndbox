@@ -1207,6 +1207,8 @@ Sandbox::~Sandbox(void)
 	delete frameFilter;
 	
 	/* Delete helper objects: */
+	if (waterTable != 0)
+		delete earthquakeManager;
 	delete waterTable;
 	delete depthImageRenderer;
 	delete handExtractor;

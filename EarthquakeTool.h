@@ -1,6 +1,6 @@
 /***********************************************************************
-EarthquakeTool - Tool to create a circular perturbation in the water table to 
-mimic an earthquake
+EarthquakeTool - Tool to create a circular or planar perturbation in the water 
+table to mimic an earthquake.
 
 This file is part of the Augmented Reality Sandbox (SARndbox).
 
@@ -22,11 +22,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #ifndef EARTHQUAKETOOL_INCLUDED
 #define EARTHQUAKETOOL_INCLUDED
 
-#include <string>
 #include <GL/gl.h>
 #include <Vrui/Tool.h>
 #include <Vrui/Application.h>
-#include <GL/gl.h>
 
 #include "Types.h"
 
@@ -40,15 +38,11 @@ class EarthquakeToolFactory:public Vrui::ToolFactory
 	{
 	friend class EarthquakeTool;
 	
-	/* Embedded classes: */
-	private:
-	
 	/* Elements: */
 	private:
 	WaterTable2* waterTable; // Pointer to water table object from which to request bathymetry grids
 	EarthquakeManager* earthquakeManager; // Pointer to earthquake manager object
 	GLsizei gridSize[2]; // Width and height of the water table's bathymetry grid
-	GLfloat cellSize[2]; // Width and height of each water table cell
 	
 	/* Constructors and destructors: */
 	public:
@@ -73,10 +67,14 @@ class EarthquakeTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	GLfloat* bathymetryBuffer; // Bathymetry grid buffer
 	bool requestPending; // Flag if this tool has a pending request to retrieve a bathymetry grid
 	OPoint basePlaneCorners[4]; // Corners of the configured sandbox area
+	int planePoints[2][3]; // Two points that determine the bounding line of a planar perturbation
+	bool isCircular; // Flag if current perturbation is circular
+	bool isPlanar; // Flag if current perturbation is planar
 	
 	/* Private methods: */
-	void createCircularPerturbation(int *center, int radius, double) const; // Creates circular perturbation in bathymetry grid
-	int getPixelPos(Vrui::Point p1, const char comp); // Get the pixel position of a object space point compenent (x | y)
+	void createCircularPerturbation(int center[], int radius, double perturbation); // Creates circular perturbation in bathymetry grid
+	void createPlanarPerturbation(int p1[], int p2[], double perturbation); // Creates planar perturbation in bathymetry grid
+	int getPixelPos(OPoint p1, const char comp); // Get the pixel position of a object space point compenent (x | y)
 	
 	/* Constructors and destructors: */
 	public:
