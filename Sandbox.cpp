@@ -461,12 +461,12 @@ GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 		/* Create a button to show the earthquake control dialog: */
 		GLMotif::Button* showEarthquakeControlDialogButton=new GLMotif::Button("ShowEarthquakeControlDialogButton",mainMenu,"Show Earthquake Simulation Control");
 		showEarthquakeControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showEarthquakeControlDialogCallback);
-		
-		/* Create a button to show the dem control dialog: */
-		GLMotif::Button* showDemControlDialogButton=new GLMotif::Button("ShowDemControlDialogButton",mainMenu,"Show DEM Control");
-		showDemControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showDemControlDialogCallback);
 		}
-	
+		
+	/* Create a button to show the dem control dialog: */
+	GLMotif::Button* showDemControlDialogButton=new GLMotif::Button("ShowDemControlDialogButton",mainMenu,"Show DEM Control");
+	showDemControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showDemControlDialogCallback);
+
 	/* Finish building the main menu: */
 	mainMenu->manageChild();
 	
@@ -629,8 +629,8 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalShiftSlider->getTextField()->setPrecision(4);
 	demVerticalShiftSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
 	demVerticalShiftSlider->setValueRange(-20.0,20.0,0.1);
-	demVerticalShiftSlider->getSlider()->addNotch(0.0);
-	demVerticalShiftSlider->setValue(0.0);
+	demVerticalShiftSlider->getSlider()->addNotch(defaultDemVerticalShift);
+	demVerticalShiftSlider->setValue(defaultDemVerticalShift);
 	demVerticalShiftSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalShiftSliderCallback);
 	
 	demControlDialog->manageChild();
@@ -790,8 +790,9 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	Math::Interval<double> rainElevationRange=cfg.retrieveValue<Math::Interval<double> >("./rainElevationRange",Math::Interval<double>(-1000.0,1000.0));
 	rainStrength=cfg.retrieveValue<GLfloat>("./rainStrength",0.25f);
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
-	baseWaterLevel=-1.0f;
+	baseWaterLevel=cfg.retrieveValue<GLfloat>("./baseWaterLevel",-2.0f);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
+	defaultDemVerticalShift=cfg.retrieveValue<float>("./defaultDemVerticalShift",-3.5f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
 	
 	/* Process command line parameters: */
@@ -905,6 +906,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				++i;
 				demDistScale=float(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"dvs")==0)
+				{
+				++i;
+				defaultDemVerticalShift=float(atof(argv[i]));
 				}
 			else if(strcasecmp(argv[i]+1,"wi")==0)
 				{

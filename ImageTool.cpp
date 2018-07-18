@@ -35,7 +35,7 @@ Methods of class ImageToolFactory:
 
 ImageToolFactory::ImageToolFactory(Vrui::ToolManager& toolManager)
 	:ToolFactory("ImageTool",toolManager),
-	 imageSelectionHelper(Vrui::getWidgetManager(),"",".jpg;.png;.tif",Vrui::openDirectory("/home/sandpit/"))
+	 imageSelectionHelper(Vrui::getWidgetManager(),"",".jpg;.png;.tif",Vrui::openDirectory("."))
 	{
 	/* Initialize tool layout: */
 	layout.setNumButtons(1);
@@ -150,6 +150,12 @@ void ImageTool::configure(const Misc::ConfigurationFileSection& configFileSectio
 	/* Query Image file name: */
 	imageFileName=configFileSection.retrieveString("./imageFileName",imageFileName);
 	}
+	
+void ImageTool::storeState(Misc::ConfigurationFileSection& configFileSection) const
+	{
+	/* Write configuration data to given configuration file section: */
+	configFileSection.storeString("./imageFileName",imageFileName);
+	}
 
 void ImageTool::initialize(void)
 	{
@@ -176,6 +182,7 @@ void ImageTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCall
 	if(cbData->newButtonState)
 		{
 		/* Toggle this Image tool as the active one: */
-		application->toggleImage(this);
+		if(!imageFileName.empty())
+			application->toggleImage(this);
 		}
 	}

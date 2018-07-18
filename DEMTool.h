@@ -68,6 +68,7 @@ class DEMTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	static DEMToolFactory* factory; // Pointer to the factory object for this class
 	DEM* dem; // Pointer to the DEM object
 	std::string demFileName; // Name of DEM file to load
+	bool haveDemVerticalShift; // Flag if the tool's configuration file section specified a DEM vertical shift
 	bool haveDemTransform; // Flag if the tool's configuration file section specified a DEM transformation
 	OGTransform demTransform; // The transformation to apply to the DEM
 	Scalar demVerticalShift; // Extra vertical shift to apply to DEM in sandbox coordinate units
@@ -85,6 +86,7 @@ class DEMTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	
 	/* Methods from class Vrui::Tool: */
 	virtual void configure(const Misc::ConfigurationFileSection& configFileSection);
+	virtual void storeState(Misc::ConfigurationFileSection& configFileSection) const;
 	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);

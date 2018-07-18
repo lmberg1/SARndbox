@@ -94,6 +94,8 @@ void DEMTool::loadDEMFile(const char* demFileName)
 	if (dem == 0)
 		{
 		dem = new DEM();
+		if (!haveDemVerticalShift) 
+			demVerticalShift = application->defaultDemVerticalShift;
 		dem->verticalScale = demVerticalScale;
 		dem->verticalShift = demVerticalShift;
 		dem->load(demFileName);
@@ -160,8 +162,9 @@ DEMToolFactory* DEMTool::initClass(Vrui::ToolManager& toolManager)
 DEMTool::DEMTool(const Vrui::ToolFactory* factory,const Vrui::ToolInputAssignment& inputAssignment)
 	:Vrui::Tool(factory,inputAssignment),
 	 dem(0),
+	 haveDemVerticalShift(false), 
 	 haveDemTransform(false),demTransform(OGTransform::identity),
-	 demVerticalShift(-3.5f),demVerticalScale(1)
+	 demVerticalShift(0), demVerticalScale(1)
 	{
 	}
 
@@ -181,8 +184,22 @@ void DEMTool::configure(const Misc::ConfigurationFileSection& configFileSection)
 		haveDemTransform=true;
 		demTransform=configFileSection.retrieveValue<OGTransform>("./demTransform",demTransform);
 		}
-	demVerticalShift=configFileSection.retrieveValue<Scalar>("./demVerticalShift",demVerticalShift);
+	if (configFileSection.hasTag("./demVerticalShift"))
+		{
+		haveDemVerticalShift=true;
+		demVerticalShift=configFileSection.retrieveValue<Scalar>("./demVerticalShift",demVerticalShift);
+		}
 	demVerticalScale=configFileSection.retrieveValue<Scalar>("./demVerticalScale",demVerticalScale);
+	}
+	
+void DEMTool::storeState(Misc::ConfigurationFileSection& configFileSection) const
+	{
+	/* Write configuration data to given configuration file section: */
+	configFileSection.storeString("./demFileName",demFileName);
+	if(configFileSection.hasTag("./demTransform"))
+		configFileSection.storeValue<OGTransform>("./demTransform",demTransform);
+	configFileSection.storeValue<Scalar>("./demVerticalShift",demVerticalShift);
+	configFileSection.storeValue<Scalar>("./demVerticalScale",demVerticalScale);
 	}
 
 void DEMTool::initialize(void)
@@ -213,15 +230,18 @@ void DEMTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallba
 		application->toggleDEM(dem);
 		}
 	}
-	
+
 void DEMTool::frame(void)
 	{
-	/* Recalculate the dem transform if the dem vertical shift or scale changes */
-	if (dem->verticalScale != demVerticalScale || 
-	    dem->verticalShift != demVerticalShift)
+	if (dem !=0)
 		{
-		demVerticalShift = dem->verticalShift;
-		demVerticalScale = dem->verticalScale;
-		loadDEMFile(demFileName.c_str());
+		/* Recalculate the dem transform if the dem vertical shift or scale changes */
+		if (dem->verticalScale != demVerticalScale || 
+		    dem->verticalShift != demVerticalShift)
+			{
+			demVerticalShift = dem->verticalShift;
+			demVerticalScale = dem->verticalScale;
+			loadDEMFile(demFileName.c_str());
+			}
 		}
 	}

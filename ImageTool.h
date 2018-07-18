@@ -78,6 +78,7 @@ class ImageTool:public Image,public Vrui::Tool,public Vrui::Application::Tool<Sa
 	
 	/* Methods from class Vrui::Tool: */
 	virtual void configure(const Misc::ConfigurationFileSection& configFileSection);
+	virtual void storeState(Misc::ConfigurationFileSection& configFileSection) const;
 	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);
