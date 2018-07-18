@@ -330,21 +330,19 @@ void Sandbox::toggleImage(Image* image)
 		activeImage=image;
 		}
 	
-	/* Enable DEM matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
+	/* Enable image matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
-		if(rsIt->fixProjectorView)
-			rsIt->surfaceRenderer->setImage(activeImage);
+		rsIt->surfaceRenderer->setImage(activeImage);
 	}
 	
 void Sandbox::toggleSlope(void)
 	{
-	/* Enable slope matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
+	/* Enable slope matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
-		if(rsIt->fixProjectorView)
-			{
-			rsIt->showSlope=!rsIt->showSlope;
-			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
-			}
+		{
+		rsIt->showSlope=!rsIt->showSlope;
+		rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+		}
 	}
 
 void Sandbox::addWater(GLContextData& contextData) const
