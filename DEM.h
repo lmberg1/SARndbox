@@ -43,6 +43,8 @@ class DEM:public GLObject
 		virtual ~DataItem(void);
 		};
 	
+	friend class DEMTool;
+	
 	/* Elements: */
 	private:
 	int demSize[2]; // Width and height of the DEM grid
@@ -51,6 +53,7 @@ class DEM:public GLObject
 	OGTransform transform; // Transformation from camera space to DEM space (z up)
 	Scalar verticalScale; // Vertical scale (exaggeration) factor
 	Scalar verticalScaleBase; // Base elevation around which vertical scale is applied
+	Scalar verticalShift; // Vertical shift
 	PTransform demTransform; // Full transformation matrix from camera space to DEM pixel space
 	GLfloat demTransformMatrix[16]; // Full transformation matrix from camera space to DEM pixel space to upload to OpenGL
 	
@@ -72,7 +75,11 @@ class DEM:public GLObject
 		return demBox;
 		}
 	float calcAverageElevation(void) const; // Calculates the average elevation of the DEM
+	float calcMinElevation(void) const; // Calculates the minimum elevation of the DEM
+	float calcMaxElevation(void) const; // Calculates the maximum elevation of the DEM
 	void setTransform(const OGTransform& newTransform,Scalar newVerticalScale,Scalar newVerticalScaleBase); // Sets the DEM transformation
+	void setDemVerticalScale(Scalar newVerticalScale); // Sets a new vertical scale
+	void setDemVerticalShift(Scalar newVerticalShift); // Sets a new vertical shift
 	const PTransform& getDemTransform(void) const // Returns the full transformation from camera space to vertically-scaled DEM pixel space
 		{
 		return demTransform;
@@ -80,6 +87,14 @@ class DEM:public GLObject
 	Scalar getVerticalScale(void) const // Returns the scaling factor from camera space elevations to DEM elevations
 		{
 		return transform.getScaling()/verticalScale;
+		}
+	Scalar getDemVerticalScale(void) const // Returns the vertical scale
+		{
+		return verticalScale;
+		}
+	Scalar getDemVerticalShift(void) const // Returns the vertical shift
+		{
+		return verticalShift;
 		}
 	void bindTexture(GLContextData& contextData) const; // Binds the DEM texture object to the currently active texture unit
 	void uploadDemTransform(GLint location) const; // Uploads the DEM transformation into the GLSL 4x4 matrix at the given uniform location

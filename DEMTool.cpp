@@ -90,16 +90,23 @@ Methods of class DEMTool:
 
 void DEMTool::loadDEMFile(const char* demFileName)
 	{
-	/* Load the selected DEM file: */
-	load(demFileName);
+	/* Load the selected DEM file if it hasn't been loaded yet: */
+	if (dem == 0)
+		{
+		dem = new DEM();
+		dem->verticalScale = demVerticalScale;
+		dem->verticalShift = demVerticalShift;
+		dem->load(demFileName);
+		}
 	
+	/* Calculate/update the dem transform */
 	OGTransform demT;
 	if(haveDemTransform)
 		demT=demTransform;
 	else
 		{
 		/* Calculate an appropriate DEM transformation to fit the DEM into the sandbox's domain: */
-		const Scalar* demBox=getDemBox();
+		const Scalar* demBox=dem->getDemBox();
 		Scalar demSx=demBox[2]-demBox[0];
 		Scalar demSy=demBox[3]-demBox[1];
 		Scalar boxSx=application->bbox.getSize(0);
@@ -109,7 +116,7 @@ void DEMTool::loadDEMFile(const char* demFileName)
 		Point demCenter;
 		demCenter[0]=Math::mid(demBox[0],demBox[2]);
 		demCenter[1]=Math::mid(demBox[1],demBox[3]);
-		demCenter[2]=Scalar(calcAverageElevation());
+		demCenter[2]=Scalar(dem->calcAverageElevation());
 		demT=OGTransform::translateFromOriginTo(demCenter);
 		
 		/* Determine whether the DEM should be rotated: */
@@ -131,7 +138,7 @@ void DEMTool::loadDEMFile(const char* demFileName)
 	demT*=OGTransform::translate(Vector(0,0,demVerticalShift/demVerticalScale));
 	
 	/* Set the DEM transformation: */
-	setTransform(demT*OGTransform(application->boxTransform),demVerticalScale,demT.getOrigin()[2]);
+	dem->setTransform(demT*OGTransform(application->boxTransform),demVerticalScale,demT.getOrigin()[2]);
 	}
 
 void DEMTool::loadDEMFileCallback(GLMotif::FileSelectionDialog::OKCallbackData* cbData)
@@ -152,13 +159,15 @@ DEMToolFactory* DEMTool::initClass(Vrui::ToolManager& toolManager)
 
 DEMTool::DEMTool(const Vrui::ToolFactory* factory,const Vrui::ToolInputAssignment& inputAssignment)
 	:Vrui::Tool(factory,inputAssignment),
+	 dem(0),
 	 haveDemTransform(false),demTransform(OGTransform::identity),
-	 demVerticalShift(0),demVerticalScale(1)
+	 demVerticalShift(-3.5f),demVerticalScale(1)
 	{
 	}
 
 DEMTool::~DEMTool(void)
 	{
+	delete dem;
 	}
 
 void DEMTool::configure(const Misc::ConfigurationFileSection& configFileSection)
@@ -172,7 +181,6 @@ void DEMTool::configure(const Misc::ConfigurationFileSection& configFileSection)
 		haveDemTransform=true;
 		demTransform=configFileSection.retrieveValue<OGTransform>("./demTransform",demTransform);
 		}
-	
 	demVerticalShift=configFileSection.retrieveValue<Scalar>("./demVerticalShift",demVerticalShift);
 	demVerticalScale=configFileSection.retrieveValue<Scalar>("./demVerticalScale",demVerticalScale);
 	}
@@ -202,6 +210,18 @@ void DEMTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallba
 	if(cbData->newButtonState)
 		{
 		/* Toggle this DEM tool as the active one: */
-		application->toggleDEM(this);
+		application->toggleDEM(dem);
+		}
+	}
+	
+void DEMTool::frame(void)
+	{
+	/* Recalculate the dem transform if the dem vertical shift or scale changes */
+	if (dem->verticalScale != demVerticalScale || 
+	    dem->verticalShift != demVerticalShift)
+		{
+		demVerticalShift = dem->verticalShift;
+		demVerticalScale = dem->verticalScale;
+		loadDEMFile(demFileName.c_str());
 		}
 	}

@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <GL/Extensions/GLARBTextureRg.h>
 #include <GL/Extensions/GLARBShaderObjects.h>
 #include <Geometry/Matrix.h>
+#include <limits>
 
 /******************************
 Methods of class DEM::DataItem:
@@ -122,6 +123,17 @@ void DEM::load(const char* demFileName)
 		demBox[i]=double(demFile->read<float>());
 	demFile->read<float>(dem,demSize[1]*demSize[0]);
 	
+	float min = calcMinElevation();
+	float max = calcMaxElevation();
+	
+	/* Scale dem values so that all elevation values are between 0 and 100 */
+	float* demPtr = dem;
+	for(int i=0; i<demSize[1]*demSize[0]; i++, demPtr++)
+		{
+		*demPtr -= min;
+		*demPtr *= 100.0/(max-min);
+		}
+	
 	/* Update the DEM transformation: */
 	calcMatrix();
 	}
@@ -137,6 +149,30 @@ float DEM::calcAverageElevation(void) const
 	/* Return the average elevation: */
 	return float(elevSum/double(demSize[1]*demSize[0]));
 	}
+	
+float DEM::calcMinElevation(void) const
+	{
+	/* Calculate the minimum elevation */
+	float min=std::numeric_limits<double>::infinity();
+	const float* demPtr=dem;
+	for(int i=demSize[1]*demSize[0];i>0;--i,++demPtr)
+		if (*demPtr < min) min = *demPtr;
+	
+	/* Return the minimum elevation: */
+	return min;
+	}
+	
+float DEM::calcMaxElevation(void) const
+	{
+	/* Calculate the maximum elevation */
+	float max=-1*std::numeric_limits<double>::infinity();
+	const float* demPtr=dem;
+	for(int i=demSize[1]*demSize[0];i>0;--i,++demPtr)
+		if (*demPtr > max) max = *demPtr;
+	
+	/* Return the maximum elevation: */
+	return max;
+	}
 
 void DEM::setTransform(const OGTransform& newTransform,Scalar newVerticalScale,Scalar newVerticalScaleBase)
 	{
@@ -146,6 +182,16 @@ void DEM::setTransform(const OGTransform& newTransform,Scalar newVerticalScale,S
 	
 	/* Update the DEM transformation: */
 	calcMatrix();
+	}
+	
+void DEM::setDemVerticalScale(Scalar newVerticalScale)
+	{
+	verticalScale=newVerticalScale;
+	}
+	
+void DEM::setDemVerticalShift(Scalar newVerticalShift)
+	{
+	verticalShift=newVerticalShift;
 	}
 
 void DEM::bindTexture(GLContextData& contextData) const

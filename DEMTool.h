@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 /* Forward declarations: */
 class Sandbox;
 class DEMTool;
+class DEM;
 
 class DEMToolFactory:public Vrui::ToolFactory
 	{
@@ -58,13 +59,14 @@ class DEMToolFactory:public Vrui::ToolFactory
 	virtual void destroyTool(Vrui::Tool* tool) const;
 	};
 
-class DEMTool:public DEM,public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
+class DEMTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	{
 	friend class DEMToolFactory;
 	
 	/* Elements: */
 	private:
 	static DEMToolFactory* factory; // Pointer to the factory object for this class
+	DEM* dem; // Pointer to the DEM object
 	std::string demFileName; // Name of DEM file to load
 	bool haveDemTransform; // Flag if the tool's configuration file section specified a DEM transformation
 	OGTransform demTransform; // The transformation to apply to the DEM
@@ -86,6 +88,7 @@ class DEMTool:public DEM,public Vrui::Tool,public Vrui::Application::Tool<Sandbo
 	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);
+	virtual void frame(void);
 	};
 
 #endif

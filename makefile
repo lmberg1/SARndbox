@@ -165,7 +165,6 @@ SARNDBOX_SOURCES = FrameFilter.cpp \
                    EarthquakeManager.cpp \
                    Image.cpp \
                    ImageTool.cpp \
-                   Random.cpp \
                    SlopeTool.cpp \
                    WaterLevelTool.cpp \
                    AddVegetationTool.cpp \

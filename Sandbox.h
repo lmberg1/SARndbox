@@ -173,6 +173,9 @@ class Sandbox:public Vrui::Application,public GLObject
 	GLMotif::PopupWindow* earthquakeControlDialog;
 	GLMotif::TextFieldSlider* earthquakeRadiusSlider;
 	GLMotif::TextFieldSlider* earthquakeStrengthSlider;
+	GLMotif::PopupWindow* demControlDialog;
+	GLMotif::TextFieldSlider* demVerticalShiftSlider;
+	GLMotif::TextFieldSlider* demVerticalScaleSlider;
 	int controlPipeFd; // File descriptor of an optional named pipe to send control commands to a running AR Sandbox
 	
 	/* Private methods: */
@@ -185,15 +188,19 @@ class Sandbox:public Vrui::Application,public GLObject
 	void pauseUpdatesCallback(GLMotif::ToggleButton::ValueChangedCallbackData* cbData);
 	void showWaterControlDialogCallback(Misc::CallbackData* cbData);
 	void showEarthquakeControlDialogCallback(Misc::CallbackData* cbData);
+	void showDemControlDialogCallback(Misc::CallbackData* cbData);
 	void waterSpeedSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterMaxStepsSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void waterAttenuationSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
 	GLMotif::PopupWindow* createEarthquakeControlDialog(void);
+	GLMotif::PopupWindow* createDemControlDialog(void);
 	
 	/* Constructors and destructors: */
 	public:

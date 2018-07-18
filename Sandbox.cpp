@@ -303,8 +303,13 @@ void Sandbox::toggleDEM(DEM* dem)
 		{
 		/* Activate this DEM: */
 		activeDem=dem;
+		
+		/* Set the dem control dialog slider values */
+		if (demVerticalScaleSlider != 0)
+			demVerticalScaleSlider->setValue(activeDem->getDemVerticalScale());
+		if (demVerticalShiftSlider != 0);
+			demVerticalShiftSlider->setValue(activeDem->getDemVerticalShift());
 		}
-	
 	/* Enable DEM matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		if(rsIt->fixProjectorView)
@@ -389,6 +394,11 @@ void Sandbox::showEarthquakeControlDialogCallback(Misc::CallbackData* cbData)
 	{
 	Vrui::popupPrimaryWidget(earthquakeControlDialog);
 	}
+	
+void Sandbox::showDemControlDialogCallback(Misc::CallbackData* cbData)
+	{
+	Vrui::popupPrimaryWidget(demControlDialog);
+	}
 
 void Sandbox::waterSpeedSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
@@ -419,6 +429,16 @@ void Sandbox::earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueCh
 	{
 	earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
 	}
+	
+void Sandbox::demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
+	{
+	activeDem->setDemVerticalShift((float) cbData->value);
+	}
+
+void Sandbox::demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
+	{
+	activeDem->setDemVerticalScale((float) cbData->value);
+	}
 
 GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 	{
@@ -443,6 +463,10 @@ GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 		/* Create a button to show the earthquake control dialog: */
 		GLMotif::Button* showEarthquakeControlDialogButton=new GLMotif::Button("ShowEarthquakeControlDialogButton",mainMenu,"Show Earthquake Simulation Control");
 		showEarthquakeControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showEarthquakeControlDialogCallback);
+		
+		/* Create a button to show the dem control dialog: */
+		GLMotif::Button* showDemControlDialogButton=new GLMotif::Button("ShowDemControlDialogButton",mainMenu,"Show DEM Control");
+		showDemControlDialogButton->getSelectCallbacks().add(this,&Sandbox::showDemControlDialogCallback);
 		}
 	
 	/* Finish building the main menu: */
@@ -573,6 +597,48 @@ GLMotif::PopupWindow* Sandbox::createEarthquakeControlDialog(void)
 	
 	return earthquakeControlDialogPopup;
 	}
+	
+GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
+	{
+	const GLMotif::StyleSheet& ss=*Vrui::getWidgetManager()->getStyleSheet();
+	
+	/* Create a popup window shell: */
+	GLMotif::PopupWindow* demControlDialogPopup=new GLMotif::PopupWindow("DemControlDialogPopup",Vrui::getWidgetManager(),"Dem Simulation Control");
+	demControlDialogPopup->setCloseButton(true);
+	demControlDialogPopup->setResizableFlags(true,false);
+	demControlDialogPopup->popDownOnClose();
+	
+	GLMotif::RowColumn* demControlDialog=new GLMotif::RowColumn("DemControlDialog",demControlDialogPopup,false);
+	demControlDialog->setOrientation(GLMotif::RowColumn::VERTICAL);
+	demControlDialog->setPacking(GLMotif::RowColumn::PACK_TIGHT);
+	demControlDialog->setNumMinorWidgets(2);
+	
+	new GLMotif::Label("demVerticalScale",demControlDialog,"Vertical Scale");
+	
+	demVerticalScaleSlider=new GLMotif::TextFieldSlider("DemVerticalScaleSlider",demControlDialog,8,ss.fontHeight*10.0f);
+	demVerticalScaleSlider->getTextField()->setFieldWidth(7);
+	demVerticalScaleSlider->getTextField()->setPrecision(4);
+	demVerticalScaleSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+	demVerticalScaleSlider->setValueRange(0.01,40.0,0.1);
+	demVerticalScaleSlider->getSlider()->addNotch(1.0);
+	demVerticalScaleSlider->setValue(1.0);
+	demVerticalScaleSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalScaleSliderCallback);
+	
+	new GLMotif::Label("demVerticalShift",demControlDialog,"Vertical Shift");
+	
+	demVerticalShiftSlider=new GLMotif::TextFieldSlider("DemVerticalShiftSlider",demControlDialog,8,ss.fontHeight*10.0f);
+	demVerticalShiftSlider->getTextField()->setFieldWidth(7);
+	demVerticalShiftSlider->getTextField()->setPrecision(4);
+	demVerticalShiftSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+	demVerticalShiftSlider->setValueRange(-20.0,20.0,0.1);
+	demVerticalShiftSlider->getSlider()->addNotch(0.0);
+	demVerticalShiftSlider->setValue(0.0);
+	demVerticalShiftSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalShiftSliderCallback);
+	
+	demControlDialog->manageChild();
+	
+	return demControlDialogPopup;
+	}
 
 namespace {
 
@@ -686,12 +752,13 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	 waterTable(0),
 	 handExtractor(0),addWaterFunction(0),addWaterFunctionRegistered(false),
 	 sun(0),
-	 activeDem(0),
+	 activeDem(0), 
 	 activeImage(0),
 	 mainMenu(0),pauseUpdatesToggle(0),waterControlDialog(0), 
 	 waterSpeedSlider(0),waterMaxStepsSlider(0),frameRateTextField(0),waterAttenuationSlider(0), 
 	 baseWaterLevelSlider(0),
 	 earthquakeControlDialog(0), earthquakeRadiusSlider(0), earthquakeStrengthSlider(0),
+	 demControlDialog(0), demVerticalShiftSlider(0), demVerticalScaleSlider(0),
 	 controlPipeFd(-1)
 	{
 	/* Read the sandbox's default configuration parameters: */
@@ -1153,6 +1220,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		{
 		waterControlDialog=createWaterControlDialog();
 		earthquakeControlDialog=createEarthquakeControlDialog();
+		demControlDialog=createDemControlDialog();
 		}
 	
 	/* Initialize the custom tool classes: */
@@ -1218,6 +1286,7 @@ Sandbox::~Sandbox(void)
 	delete mainMenu;
 	delete waterControlDialog;
 	delete earthquakeControlDialog;
+	delete demControlDialog;
 	
 	close(controlPipeFd);
 	}
