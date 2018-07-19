@@ -1326,138 +1326,138 @@ GLfloat WaterTable2::runSimulationStep(bool forceStepSize,GLContextData& context
 	
 void WaterTable2::runVegetationSimulation(GLContextData& contextData)
 	{
-	/* Get the data item: */
-	DataItem* dataItem=contextData.retrieveDataItem<DataItem>(this);
-	
-	/* Save relevant OpenGL state: */
-	glPushAttrib(GL_VIEWPORT_BIT);
-	GLint currentFrameBuffer;
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT,&currentFrameBuffer);
-	
-	/*********************************************************************
-	Step 1: Calculate updated hydration.
-	*********************************************************************/
-	
-	/* Set up the hydration frame buffer: */
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->hydrationFramebufferObject);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT+(1-dataItem->currentHydration));
-	glViewport(0,0,size[0]-1,size[1]-1);
-	
-	/* Set up the hydration shader */
-	glUseProgramObjectARB(dataItem->hydrationShader);
-	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[dataItem->currentBathymetry]);
-	glUniform1iARB(dataItem->hydrationShaderUniformLocations[0], 0);
-	glActiveTextureARB(GL_TEXTURE1_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
-	glUniform1iARB(dataItem->hydrationShaderUniformLocations[1], 1);
-	glActiveTextureARB(GL_TEXTURE2_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[1-dataItem->currentHydration]);
-	glUniform1iARB(dataItem->hydrationShaderUniformLocations[2], 2);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[3],hydrationRange);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[4],detectionThreshold);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[5],hydrationVelocity);
-	glUniformARB(dataItem->hydrationShaderUniformLocations[6],hydrationStepSize);
-
-	/* Run the hydration shader program */
-	glBegin(GL_QUADS);
-	glVertex2i(0,0);
-	glVertex2i(size[0]-1,0);
-	glVertex2i(size[0]-1,size[1]-1);
-	glVertex2i(0,size[1]-1);
-	glEnd();
-	
-	/* Update the current hydration: */
-	dataItem->currentHydration=1-dataItem->currentHydration;
-	
-	/*********************************************************************
-	Step 2: Calculate updated vegetation.
-	*********************************************************************/
-	
-	/* Create new random grid and random number to determine color */
-	loadRandomGrid();
-	GLfloat color = (rand() % 30)/30.0 + 0.25;
-	
-	/* Bind the vegetation rendering frame buffer */
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->vegetationFramebufferObject);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glViewport(0,0,size[0]-1,size[1]-1);
-	
-	/* Set up the vegetation update shader: */
-	glUseProgramObjectARB(dataItem->vegetationShader);
-	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
-	glUniform1iARB(dataItem->vegetationShaderUniformLocations[0],0);
-	glActiveTextureARB(GL_TEXTURE1_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[dataItem->currentHydration]);
-	glUniform1iARB(dataItem->vegetationShaderUniformLocations[1],1);
-	
-	/* Upload the random grid */
-	glActiveTextureARB(GL_TEXTURE2_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->randomTextureObject);
-	glUniform1iARB(dataItem->vegetationShaderUniformLocations[2],2);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB,0,0,0,size[0],size[1],GL_RED,GL_FLOAT,randomGrid);
-	
-	glUniformARB(dataItem->vegetationShaderUniformLocations[3],vegGrowthRate);
-	glUniformARB(dataItem->vegetationShaderUniformLocations[4],color);
-	
-	/* Run the vegetation update: */
-	glBegin(GL_QUADS);
-	glVertex2i(0,0);
-	glVertex2i(size[0]-1,0);
-	glVertex2i(size[0]-1,size[1]-1);
-	glVertex2i(0,size[1]-1);
-	glEnd();
-		
 	if (!renderVegetationFunctions.empty())
 		{
+		/* Get the data item: */
+		DataItem* dataItem=contextData.retrieveDataItem<DataItem>(this);
+	
+		/* Save relevant OpenGL state: */
+		glPushAttrib(GL_VIEWPORT_BIT);
+		GLint currentFrameBuffer;
+		glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT,&currentFrameBuffer);
+	
+		/*********************************************************************
+		Step 1: Calculate updated hydration.
+		*********************************************************************/
+	
+		/* Set up the hydration frame buffer: */
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->hydrationFramebufferObject);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT+(1-dataItem->currentHydration));
+		glViewport(0,0,size[0]-1,size[1]-1);
+	
+		/* Set up the hydration shader */
+		glUseProgramObjectARB(dataItem->hydrationShader);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[dataItem->currentBathymetry]);
+		glUniform1iARB(dataItem->hydrationShaderUniformLocations[0], 0);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
+		glUniform1iARB(dataItem->hydrationShaderUniformLocations[1], 1);
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[1-dataItem->currentHydration]);
+		glUniform1iARB(dataItem->hydrationShaderUniformLocations[2], 2);
+		glUniformARB(dataItem->hydrationShaderUniformLocations[3],hydrationRange);
+		glUniformARB(dataItem->hydrationShaderUniformLocations[4],detectionThreshold);
+		glUniformARB(dataItem->hydrationShaderUniformLocations[5],hydrationVelocity);
+		glUniformARB(dataItem->hydrationShaderUniformLocations[6],hydrationStepSize);
+
+		/* Run the hydration shader program */
+		glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(size[0]-1,0);
+		glVertex2i(size[0]-1,size[1]-1);
+		glVertex2i(0,size[1]-1);
+		glEnd();
+	
+		/* Update the current hydration: */
+		dataItem->currentHydration=1-dataItem->currentHydration;
+	
+		/*********************************************************************
+		Step 2: Calculate updated vegetation.
+		*********************************************************************/
+	
+		/* Create new random grid and random number to determine color */
+		loadRandomGrid();
+		GLfloat color = (rand() % 30)/30.0 + 0.25;
+	
+		/* Bind the vegetation rendering frame buffer */
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->vegetationFramebufferObject);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glViewport(0,0,size[0]-1,size[1]-1);
+	
+		/* Set up the vegetation update shader: */
+		glUseProgramObjectARB(dataItem->vegetationShader);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[0],0);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[dataItem->currentHydration]);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[1],1);
+	
+		/* Upload the random grid */
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->randomTextureObject);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[2],2);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB,0,0,0,size[0],size[1],GL_RED,GL_FLOAT,randomGrid);
+	
+		glUniformARB(dataItem->vegetationShaderUniformLocations[3],vegGrowthRate);
+		glUniformARB(dataItem->vegetationShaderUniformLocations[4],color);
+	
+		/* Run the vegetation update: */
+		glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(size[0]-1,0);
+		glVertex2i(size[0]-1,size[1]-1);
+		glVertex2i(0,size[1]-1);
+		glEnd();
+		
 		/* Save OpenGL state: */
 		GLfloat currentClearColor[4];
 		glGetFloatv(GL_COLOR_CLEAR_VALUE,currentClearColor);
-	
+
 		/*******************************************************************
 		Step 3: Render all vegetation sources and sinks additively into the
 		vegetation texture.
 		*******************************************************************/
-	
+
 		/* Set up the vegetation frame buffer: */
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,dataItem->vegetationFramebufferObject);
 		glViewport(0,0,size[0],size[1]);
-	
+
 		/* Enable additive rendering: */
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE,GL_ONE);
-	
+
 		/* Set up the water adding shader: */
 		glUseProgramObjectARB(dataItem->waterAddShader);
 		glUniformMatrix4fvARB(dataItem->waterAddShaderUniformLocations[0],1,GL_FALSE,waterAddPmvMatrix);
 		glUniform1fARB(dataItem->waterAddShaderUniformLocations[1],30.0);
-	
+
 		/* Bind the vegetation texture: */
 		glActiveTextureARB(GL_TEXTURE0_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->vegetationTextureObject);
 		glUniform1iARB(dataItem->waterAddShaderUniformLocations[2],0);
-	
+
 		/* Call all render functions: */
 		for(std::vector<const AddWaterFunction*>::const_iterator rfIt=renderVegetationFunctions.begin();rfIt!=renderVegetationFunctions.end();++rfIt)
 			(**rfIt)(contextData);
-		
+	
 		/* Restore OpenGL state: */
 		glDisable(GL_BLEND);
-		}
 		
-	/* Unbind all shaders and textures: */
-	glUseProgramObjectARB(0);
-	glActiveTextureARB(GL_TEXTURE2_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
-	glActiveTextureARB(GL_TEXTURE1_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
-	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		/* Unbind all shaders and textures: */
+		glUseProgramObjectARB(0);
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 	
-	/* Restore OpenGL state: */
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,currentFrameBuffer);
-	glPopAttrib();
+		/* Restore OpenGL state: */
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,currentFrameBuffer);
+		glPopAttrib();
+		}
 	}
 
 void WaterTable2::bindBathymetryTexture(GLContextData& contextData) const

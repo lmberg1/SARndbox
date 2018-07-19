@@ -109,7 +109,6 @@ class Sandbox:public Vrui::Application,public GLObject
 		GLfloat contourLineSpacing; // Spacing between adjacent contour lines in cm
 		bool renderWaterSurface; // Flag whether to render the water surface as a geometric surface
 		GLfloat waterOpacity; // Opacity factor for water when rendered as texture
-		bool useVegetation; // Flag whether to render vegetation
 		bool showSlope; // Flag whether to show slope
 		SurfaceRenderer* surfaceRenderer; // Surface rendering object for this window
 		WaterRenderer* waterRenderer; // A renderer to render the water surface as geometry

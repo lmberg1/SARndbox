@@ -387,7 +387,7 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 				\n";
 			}
 			
-		if(waterTable!=0&&vegetation!=0)
+		if(waterTable!=0)
 			{
 			/* Declare the vegetation handling functions: */
 			fragmentDeclarations+="\
@@ -500,7 +500,7 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterOpacity");
 			*(ulPtr++)=glGetUniformLocationARB(result,"waterAnimationTime");
 			}
-		if(waterTable!=0&&vegetation!=0)
+		if(waterTable!=0)
 			{
 			*(ulPtr++)=glGetUniformLocationARB(result,"vegetationSampler");
 			}
@@ -609,7 +609,6 @@ SurfaceRenderer::SurfaceRenderer(const DepthImageRenderer* sDepthImageRenderer)
 	 dem(0),demDistScale(1.0f),
 	 illuminate(false),
 	 waterTable(0),advectWaterTexture(false),waterOpacity(2.0f),
-	 vegetation(0),
 	 surfaceSettingsVersion(1),
 	 animationTime(0.0)
 	{
@@ -744,12 +743,6 @@ void SurfaceRenderer::setDemDistScale(GLfloat newDemDistScale)
 void SurfaceRenderer::setIlluminate(bool newIlluminate)
 	{
 	illuminate=newIlluminate;
-	++surfaceSettingsVersion;
-	}
-	
-void SurfaceRenderer::setVegetation(bool newVegetation)
-	{
-	vegetation=newVegetation;
 	++surfaceSettingsVersion;
 	}
 
@@ -946,7 +939,7 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 		glUniform1fARB(*(ulPtr++),GLfloat(animationTime));
 		}
 		
-	if(waterTable!=0&&vegetation!=0)
+	if(waterTable!=0)
 		{
 		/* Bind the vegetation texture: */
 		glActiveTextureARB(GL_TEXTURE6_ARB);
@@ -967,7 +960,7 @@ void SurfaceRenderer::renderSinglePass(const int viewport[4],const PTransform& p
 	depthImageRenderer->renderSurfaceTemplate(contextData);
 	
 	/* Unbind the vegetation texture: */
-	if(waterTable!=0&&vegetation!=0)
+	if(waterTable!=0)
 		{
 		glActiveTextureARB(GL_TEXTURE6_ARB);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
