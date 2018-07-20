@@ -99,8 +99,13 @@ void AddVegetationTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::Bu
 	GLfloat waterAmount=application->rainStrength;
 	if(!cbData->newButtonState)
 		waterAmount=-waterAmount;
+	if (buttonSlotIndex==0)
+		application->waterTable->setClearVegetation(false);
 	if(buttonSlotIndex==1)
+		{
 		waterAmount=-waterAmount;
+		application->waterTable->setClearVegetation(true);
+		}
 	adding+=waterAmount;
 	}
 

@@ -93,7 +93,7 @@ class WaterTable2:public GLObject
 		GLuint vegetationFramebufferObject; // Frame buffer used for hydration computation
 		GLuint hydrationFramebufferObject; // Frame buffer used for vegetation computation
 		GLhandleARB vegetationShader; // Shader to update cell-centered vegetation values
-		GLint vegetationShaderUniformLocations[6];
+		GLint vegetationShaderUniformLocations[8];
 		GLhandleARB hydrationShader; // Shader to compute hydration values
 		GLint hydrationShaderUniformLocations[7];
 		
@@ -145,6 +145,7 @@ class WaterTable2:public GLObject
 	GLfloat vegGrowthRate;
 	GLfloat vegStart;
 	GLfloat vegEnd;
+	bool clearVeg;
 	
 	/* Private methods: */
 	void loadRandomGrid(); // Loads a random grid of water table size into randomGrid
@@ -181,7 +182,7 @@ class WaterTable2:public GLObject
 		{
 		return attenuation;
 		}
-	GLfloat getBaseWaterLevel(void) const // Returns the attenuation factor for partial discharges
+	GLfloat getBaseWaterLevel(void) const // Returns the base water level
 		{
 		return baseWaterLevel;
 		}
@@ -189,10 +190,15 @@ class WaterTable2:public GLObject
 		{
 		return dryBoundary;
 		}
+	bool getClearVegetation(void) // Returns the clear vegetation flag
+		{
+		return clearVeg;
+		}
 	void setElevationRange(Scalar newMin,Scalar newMax); // Sets the range of possible elevations in the water table
 	void setAttenuation(GLfloat newAttenuation); // Sets the attenuation factor for partial discharges
 	void setMaxStepSize(GLfloat newMaxStepSize); // Sets the maximum step size for all subsequent integration steps
 	void setBaseWaterLevel(GLfloat newBaseWaterLevel); // Sets the base water level
+	void setClearVegetation(bool newClearVegetetation); // Sets the flag to clear vegetation
 	const PTransform& getWaterTextureTransform(void) const // Returns the matrix transforming from camera space into water texture space
 		{
 		return waterTextureTransform;

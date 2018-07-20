@@ -362,6 +362,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	vegStart = 0.2f;
 	vegEnd = 0.8f;
 	vegGrowthRate = 10.0f;
+	clearVeg=false;
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* sDepthImageRenderer,const Point basePlaneCorners[4])
@@ -433,6 +434,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	vegStart = 0.2f;
 	vegEnd = 0.8f;
 	vegGrowthRate = 10.0f;
+	clearVeg=false;
 	}
 
 WaterTable2::~WaterTable2(void)
@@ -819,10 +821,12 @@ void WaterTable2::initContext(GLContextData& contextData) const
 	glDeleteObjectARB(fragmentShader);
 	dataItem->vegetationShaderUniformLocations[0]=glGetUniformLocationARB(dataItem->vegetationShader,"vegetationSampler");
 	dataItem->vegetationShaderUniformLocations[1]=glGetUniformLocationARB(dataItem->vegetationShader,"hydrationSampler");
-	dataItem->vegetationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->vegetationShader,"randomSampler");
-	dataItem->vegetationShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->vegetationShader,"growthRate");
-	dataItem->vegetationShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->vegetationShader,"color");
-	
+	dataItem->vegetationShaderUniformLocations[2]=glGetUniformLocationARB(dataItem->vegetationShader,"bathymetrySampler");
+	dataItem->vegetationShaderUniformLocations[3]=glGetUniformLocationARB(dataItem->vegetationShader,"quantitySampler");
+	dataItem->vegetationShaderUniformLocations[4]=glGetUniformLocationARB(dataItem->vegetationShader,"randomSampler");
+	dataItem->vegetationShaderUniformLocations[5]=glGetUniformLocationARB(dataItem->vegetationShader,"growthRate");
+	dataItem->vegetationShaderUniformLocations[6]=glGetUniformLocationARB(dataItem->vegetationShader,"color");
+	dataItem->vegetationShaderUniformLocations[7]=glGetUniformLocationARB(dataItem->vegetationShader,"clearVeg");
 	}
 	
 	/* Create the hydration shader: */
@@ -866,6 +870,11 @@ void WaterTable2::setBaseWaterLevel(GLfloat newBaseWaterLevel)
 	{
 	oldBaseWaterLevel=baseWaterLevel;
 	baseWaterLevel=newBaseWaterLevel;
+	}
+	
+void WaterTable2::setClearVegetation(bool newClearVegetetation)
+	{
+	clearVeg=newClearVegetetation;
 	}
 
 void WaterTable2::addRenderFunction(const AddWaterFunction* newRenderFunction)
@@ -1393,15 +1402,22 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData)
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->hydrationTextureObjects[dataItem->currentHydration]);
 		glUniform1iARB(dataItem->vegetationShaderUniformLocations[1],1);
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->bathymetryTextureObjects[dataItem->currentBathymetry]);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[2],2);
+		glActiveTextureARB(GL_TEXTURE3_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[3],3);
 	
 		/* Upload the random grid */
-		glActiveTextureARB(GL_TEXTURE2_ARB);
+		glActiveTextureARB(GL_TEXTURE4_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->randomTextureObject);
-		glUniform1iARB(dataItem->vegetationShaderUniformLocations[2],2);
+		glUniform1iARB(dataItem->vegetationShaderUniformLocations[4],4);
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB,0,0,0,size[0],size[1],GL_RED,GL_FLOAT,randomGrid);
 	
-		glUniformARB(dataItem->vegetationShaderUniformLocations[3],vegGrowthRate);
-		glUniformARB(dataItem->vegetationShaderUniformLocations[4],color);
+		glUniformARB(dataItem->vegetationShaderUniformLocations[5],vegGrowthRate);
+		glUniformARB(dataItem->vegetationShaderUniformLocations[6],color);
+		glUniformARB(dataItem->vegetationShaderUniformLocations[7],clearVeg);
 	
 		/* Run the vegetation update: */
 		glBegin(GL_QUADS);
@@ -1447,6 +1463,10 @@ void WaterTable2::runVegetationSimulation(GLContextData& contextData)
 		
 		/* Unbind all shaders and textures: */
 		glUseProgramObjectARB(0);
+		glActiveTextureARB(GL_TEXTURE4_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
+		glActiveTextureARB(GL_TEXTURE3_ARB);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 		glActiveTextureARB(GL_TEXTURE2_ARB);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB,0);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
