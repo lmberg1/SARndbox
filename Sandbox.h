@@ -132,6 +132,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	friend class SlopeTool;
 	friend class WaterLevelTool;
 	friend class AddVegetationTool;
+	friend class ColorMapTool;
 	
 	/* Elements: */
 	private:

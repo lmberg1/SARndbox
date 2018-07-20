@@ -110,6 +110,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "DEMTool.h"
 #include "ImageTool.h"
 #include "SlopeTool.h"
+#include "ColorMapTool.h"
 #include "WaterLevelTool.h"
 #include "AddVegetationTool.h"
 #include "BathymetrySaverTool.h"
@@ -1122,7 +1123,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	/* Create the depth image renderer: */
 	depthImageRenderer=new DepthImageRenderer(frameSize);
 	depthImageRenderer->setDepthProjection(cameraIps.depthProjection);
-	depthImageRenderer->setBasePlane(basePlane);
+	bool updateTransform=true;
+	depthImageRenderer->setBasePlane(basePlane, updateTransform);
 	
 	/* Calculate the transformation from camera space to sandbox space: */
 	{
@@ -1224,6 +1226,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
 	SlopeTool::initClass(*Vrui::getToolManager());
+	ColorMapTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
@@ -1335,7 +1338,10 @@ void Sandbox::frame(void)
 	/* Update all color maps: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		{
-	      if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
+	      if(rsIt->elevationColorMap!=0) {
+	      	rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
+	      	rsIt->elevationColorMap->calcTexturePlane(depthImageRenderer);
+	      }
 	      if(rsIt->slopeColorMap!=0) rsIt->slopeColorMap->load(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
 		}
 		
@@ -1464,7 +1470,6 @@ void Sandbox::display(GLContextData& contextData) const
 			}
 		else {
 			waterTable->updateBathymetry(contextData);
-		
 		}
 		
 		/* Run the water flow simulation's main pass: */
