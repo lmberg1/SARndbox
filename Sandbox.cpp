@@ -682,6 +682,9 @@ void printUsage(void)
 	std::cout<<"  -wts <water grid width> <water grid height>"<<std::endl;
 	std::cout<<"     Sets the width and height of the water flow simulation grid"<<std::endl;
 	std::cout<<"     Default: 640 480"<<std::endl;
+	std::cout<<"  -bwl <base water level>"<<std::endl;
+	std::cout<<"     Sets the base water level in the sandbox"<<std::endl;
+	std::cout<<"     Default: -2.0"<<std::endl;
 	std::cout<<"  -ws <water speed> <water max steps>"<<std::endl;
 	std::cout<<"     Sets the relative speed of the water simulation and the maximum"<<std::endl;
 	std::cout<<"     number of simulation steps per frame"<<std::endl;
@@ -699,6 +702,9 @@ void printUsage(void)
 	std::cout<<"  -dds <DEM distance scale>"<<std::endl;
 	std::cout<<"     DEM matching distance scale factor in cm"<<std::endl;
 	std::cout<<"     Default: 1.0"<<std::endl;
+	std::cout<<"  -dvs <DEM vertical shift>"<<std::endl;
+	std::cout<<"     DEM matching vertical shift"<<std::endl;
+	std::cout<<"     Default: -3.5"<<std::endl;
 	std::cout<<"  -wi <window index>"<<std::endl;
 	std::cout<<"     Sets the zero-based index of the display window to which the"<<std::endl;
 	std::cout<<"     following rendering settings are applied"<<std::endl;
@@ -719,9 +725,13 @@ void printUsage(void)
 	std::cout<<"  -nhm"<<std::endl;
 	std::cout<<"     Disables elevation color mapping"<<std::endl;
 	std::cout<<"  -uhm [elevation color map file name]"<<std::endl;
-	std::cout<<"     Enables elevation color mapping and loads the elevation color map from"<<std::endl;
-	std::cout<<"     the file of the given name"<<std::endl;
+	std::cout<<"     Enables elevation and slope color mapping and loads the elevation color map from"<<std::endl;
+	std::cout<<"     the file of the given name and the slope color map from the default file"<<std::endl;
 	std::cout<<"     Default elevation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME<<std::endl;
+	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
+	std::cout<<"  -usm [slope color map file name]"<<std::endl;
+	std::cout<<"     Loads the slope color map from the file of the given name"<<std::endl;
+	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
 	std::cout<<"  -ncl"<<std::endl;
 	std::cout<<"     Disables topographic contour lines"<<std::endl;
 	std::cout<<"  -ucl [contour line spacing]"<<std::endl;
@@ -958,8 +968,9 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					{
 					/* Load the default height color map: */
 					renderSettings.back().loadHeightMap(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
-					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
 					}
+				/* Load the default slope color map: */
+				renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
 				}
 			else if(strcasecmp(argv[i]+1,"usm")==0)
 				{
@@ -968,6 +979,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					/* Load the slope color map file specified in the next argument: */
 					++i;
 					renderSettings.back().loadSlopeMap(argv[i]);
+					}
+				else
+					{
+					/* Load the default slope color map: */
+					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
 					}
 				}
 			else if(strcasecmp(argv[i]+1,"ncl")==0)
@@ -990,10 +1006,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				++i;
 				renderSettings.back().waterOpacity=GLfloat(atof(argv[i]));
-				}
-			else if(strcasecmp(argv[i]+1,"slp")==0)
-				{
-				renderSettings.back().showSlope=true;
 				}
 			else if(strcasecmp(argv[i]+1,"cp")==0)
 				{
@@ -1337,13 +1349,7 @@ void Sandbox::frame(void)
 
 	/* Update all color maps: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
-		{
-	      if(rsIt->elevationColorMap!=0) {
-	      	rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
-	      	rsIt->elevationColorMap->calcTexturePlane(depthImageRenderer);
-	      }
-	      if(rsIt->slopeColorMap!=0) rsIt->slopeColorMap->load(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
-		}
+	      if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->calcTexturePlane(depthImageRenderer);
 		
 	/* Check if there is a control command on the control pipe: */
 	if(controlPipeFd>=0)

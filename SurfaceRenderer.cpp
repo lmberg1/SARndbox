@@ -351,7 +351,7 @@ GLhandleARB SurfaceRenderer::createSinglePassSurfaceShader(const GLLightTracker&
 			{
 			fragmentMain+="\
 				/* Set the surface's base color to white: */\n\
-				vec4 baseColor=vec4(0.0,1.0,0.0,1.0);\n\
+				vec4 baseColor=vec4(1.0,1.0,1.0,1.0);\n\
 				\n";
 			}
 		
