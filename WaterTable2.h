@@ -134,7 +134,7 @@ class WaterTable2:public GLObject
 	int minNumBathymetryCalls; // Minimum number of calls to updateBathymetry to fully initialize sandbox bathymetry
 	bool dryBoundary; // Flag whether to enforce dry boundary conditions at the end of each simulation step
 	unsigned int readBathymetryRequest; // Request token to read back the current bathymetry grid from the GPU
-	mutable GLfloat* readBathymetryBuffer; // Buffer into which to read the current bathymetry grid
+	mutable GLfloat* readBathymetryBuffer; // Bufafer into which to read the current bathymetry grid
 	mutable unsigned int readBathymetryReply; // Reply token after reading back the current bathymetry grid
 	
 	/* Vegetation simulation parameters */

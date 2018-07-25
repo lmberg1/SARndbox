@@ -537,16 +537,19 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	waterAttenuationSlider->setValue(1.0-double(waterTable->getAttenuation()));
 	waterAttenuationSlider->getValueChangedCallbacks().add(this,&Sandbox::waterAttenuationSliderCallback);
 
-	new GLMotif::Label("BaseWaterLevelLabel",waterControlDialog,"Base Water Level");
+	if (enableBaseWaterLevel)
+		{
+		new GLMotif::Label("BaseWaterLevelLabel",waterControlDialog,"Base Water Level");
 	
-	baseWaterLevelSlider=new GLMotif::TextFieldSlider("BaseWaterLevelSlider",waterControlDialog,8,ss.fontHeight*10.0f);
-	baseWaterLevelSlider->getTextField()->setFieldWidth(7);
-	baseWaterLevelSlider->getTextField()->setPrecision(4);
-	baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
-	baseWaterLevelSlider->getSlider()->addNotch(double(baseWaterLevel));
-	baseWaterLevelSlider->setValue(double(baseWaterLevel));
-	baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
+		baseWaterLevelSlider=new GLMotif::TextFieldSlider("BaseWaterLevelSlider",waterControlDialog,8,ss.fontHeight*10.0f);
+		baseWaterLevelSlider->getTextField()->setFieldWidth(7);
+		baseWaterLevelSlider->getTextField()->setPrecision(4);
+		baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+		baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
+		baseWaterLevelSlider->getSlider()->addNotch(double(baseWaterLevel));
+		baseWaterLevelSlider->setValue(double(baseWaterLevel));
+		baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
+		}
 	
 	waterControlDialog->manageChild();
 	
@@ -683,7 +686,7 @@ void printUsage(void)
 	std::cout<<"     Sets the width and height of the water flow simulation grid"<<std::endl;
 	std::cout<<"     Default: 640 480"<<std::endl;
 	std::cout<<"  -bwl <base water level>"<<std::endl;
-	std::cout<<"     Sets the base water level in the sandbox"<<std::endl;
+	std::cout<<"     Enables setting a base water level and sets the base water level in the sandbox"<<std::endl;
 	std::cout<<"     Default: -2.0"<<std::endl;
 	std::cout<<"  -ws <water speed> <water max steps>"<<std::endl;
 	std::cout<<"     Sets the relative speed of the water simulation and the maximum"<<std::endl;
@@ -748,7 +751,6 @@ void printUsage(void)
 	std::cout<<"  -cp <control pipe name>"<<std::endl;
 	std::cout<<"     Sets the name of a named POSIX pipe from which to read control commands"<<std::endl;
 	}
-
 }
 
 Sandbox::Sandbox(int& argc,char**& argv)
@@ -799,6 +801,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	Math::Interval<double> rainElevationRange=cfg.retrieveValue<Math::Interval<double> >("./rainElevationRange",Math::Interval<double>(-1000.0,1000.0));
 	rainStrength=cfg.retrieveValue<GLfloat>("./rainStrength",0.25f);
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
+	enableBaseWaterLevel=cfg.hasTag("./baseWaterLevel");
 	baseWaterLevel=cfg.retrieveValue<GLfloat>("./baseWaterLevel",-2.0f);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	defaultDemVerticalShift=cfg.retrieveValue<float>("./defaultDemVerticalShift",-3.5f);
@@ -891,6 +894,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 			else if(strcasecmp(argv[i]+1,"bwl")==0)
 				{
 				++i;
+				enableBaseWaterLevel=true;
 				baseWaterLevel=GLfloat(atof(argv[i]));
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
@@ -1231,8 +1235,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		{
 		waterControlDialog=createWaterControlDialog();
 		earthquakeControlDialog=createEarthquakeControlDialog();
-		demControlDialog=createDemControlDialog();
 		}
+	demControlDialog=createDemControlDialog();
 	
 	/* Initialize the custom tool classes: */
 	DEMTool::initClass(*Vrui::getToolManager());
@@ -1245,8 +1249,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		EarthquakeTool::initClass(waterTable, earthquakeManager, *Vrui::getToolManager());
 		GlobalWaterTool::initClass(*Vrui::getToolManager());
 		LocalWaterTool::initClass(*Vrui::getToolManager());
-		WaterLevelTool::initClass(*Vrui::getToolManager());
 		AddVegetationTool::initClass(*Vrui::getToolManager());
+		WaterLevelTool::initClass(*Vrui::getToolManager());
 		}
 	addEventTool("Pause Topography",0,0);
 	
@@ -1401,14 +1405,6 @@ void Sandbox::frame(void)
 				if(waterAttenuationSlider!=0)
 					waterAttenuationSlider->setValue(attenuation);
 				}
-			else if(strcasecmp(command,"baseWaterLevel")==0)
-				{
-				double baseWaterLevel=atof(parameter);
-				if(waterTable!=0)
-					waterTable->setBaseWaterLevel(GLfloat(baseWaterLevel));
-				if(baseWaterLevelSlider!=0)
-					baseWaterLevelSlider->setValue(baseWaterLevel);
-				}
 			else if(strcasecmp(command,"colorMap")==0)
 				{
 				try
@@ -1496,7 +1492,7 @@ void Sandbox::display(GLContextData& contextData) const
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();
 		
-		if (waterTable->bathymetryIsInitialized())
+		if (enableBaseWaterLevel && waterTable->bathymetryIsInitialized())
 			waterTable->setBaseWaterLevel(baseWaterLevel);
 		}
 	

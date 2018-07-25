@@ -133,6 +133,7 @@ class Sandbox:public Vrui::Application,public GLObject
 	friend class WaterLevelTool;
 	friend class AddVegetationTool;
 	friend class ColorMapTool;
+	friend class EarthquakeTool;
 	
 	/* Elements: */
 	private:
@@ -152,10 +153,11 @@ class Sandbox:public Vrui::Application,public GLObject
 	unsigned int waterMaxSteps; // Maximum number of water simulation steps per frame
 	GLfloat rainStrength; // Amount of water deposited by rain tools and objects on each water simulation step
 	GLfloat baseWaterLevel; // Base water level in the sandbox
+	bool enableBaseWaterLevel; // Flags whether setting a base water level is enabled
 	float defaultDemVerticalShift; // Default vertical shift to apply to DEMs
 	HandExtractor* handExtractor; // Object to detect splayed hands above the sand surface to make rain
 	const AddWaterFunction* addWaterFunction; // Render function registered with the water table
-	bool addWaterFunctionRegistered; // Flag if the water adding function is currently registered with the water table
+	bool addWaterFunctionRegistered; // Flag if the water adding function is currently registered with the water t
 	std::vector<RenderSettings> renderSettings; // List of per-window rendering settings
 	Vrui::Lightsource* sun; // An external fixed light source
 	Vrui::Point navCenter;

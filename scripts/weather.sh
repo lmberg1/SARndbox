@@ -2,9 +2,8 @@
 #	Script: weather.sh
 #	Cycles between different weather types defined in Shaders directory
 
-VERSION=2.3
-SCRIPT_DIR="$HOME"/src/SARndbox-"$VERSION"/scripts
-SHADER_DIR="$HOME"/src/SARndbox-"$VERSION"/share/SARndbox-"$VERSION"/Shaders
+SCRIPT_DIR="$HOME"/src/SARndbox-2.3/scripts
+SHADER_DIR="$HOME"/src/SARndbox-2.3/share/SARndbox-2.3/Shaders
 
 # Possible weather values: Lava Ice Snow Water ToxicWaste ToxicDeath SparklyIce
 # 				   PollutedWater

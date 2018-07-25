@@ -78,6 +78,12 @@ GLfloat* makeBuffer(int width,int height,int numComponents,...)
 
 }
 
+void WaterTable2::loadRandomGrid() 
+	{
+	for (int i = 0; i < size[0]*size[1]; i++)
+		randomGrid[i] = ((float) rand())/((float) RAND_MAX);
+	}
+
 /**************************************
 Methods of class WaterTable2::DataItem:
 **************************************/
@@ -150,14 +156,6 @@ WaterTable2::DataItem::~DataItem(void)
 /****************************
 Methods of class WaterTable2:
 ****************************/
-
-void WaterTable2::loadRandomGrid() 
-	{
-	randomGrid = new float[size[0]*size[1]];
-	
-	for (int i = 0; i < size[0]*size[1]; i++)
-		randomGrid[i] = ((float) rand())/((float) RAND_MAX);
-	}
 
 void WaterTable2::calcTransformations(void)
 	{
@@ -318,7 +316,7 @@ GLfloat WaterTable2::calcDerivative(WaterTable2::DataItem* dataItem,GLuint quant
 	}
 
 WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2])
-	:depthImageRenderer(0), randomGrid(0),
+	:depthImageRenderer(0),
 	 baseTransform(ONTransform::identity),
 	 dryBoundary(true),
 	 readBathymetryRequest(0U),readBathymetryBuffer(0),readBathymetryReply(0U)
@@ -331,6 +329,8 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	size[1]=height;
 	for(int i=0;i<2;++i)
 		cellSize[i]=sCellSize[i];
+		
+	randomGrid = new GLfloat[size[0]*size[1]];
 	
 	/* Calculate a simulation domain: */
 	for(int i=0;i<2;++i)
@@ -351,8 +351,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const GLfloat sCellSize[2]
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=0.0f;
-	baseWaterLevel=-100.0f;
-	oldBaseWaterLevel=-100.0f;
+	baseWaterLevel=oldBaseWaterLevel=-100.0f;
 	
 	/* Initialize the vegetation simulation parameters: */
 	hydrationRange = height * 0.1625f;
@@ -375,7 +374,8 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	size[0]=width;
 	size[1]=height;
 	
-	loadRandomGrid();
+	/* Allocate grid for random numbers */
+	randomGrid = new GLfloat[size[0]*size[1]];
 	
 	/* Project the corner points to the base plane and calculate their centroid: */
 	const Plane& basePlane=depthImageRenderer->getBasePlane();
@@ -423,8 +423,7 @@ WaterTable2::WaterTable2(GLsizei width,GLsizei height,const DepthImageRenderer* 
 	
 	/* Initialize the water deposit amount: */
 	waterDeposit=1.0f;
-	baseWaterLevel=-100.0f;
-	oldBaseWaterLevel=-100.0f;
+	baseWaterLevel=oldBaseWaterLevel=-100.0f;
 	
 	/* Initialize the vegetation simulation parameters: */
 	hydrationRange = height * 0.1625f;
@@ -1062,6 +1061,9 @@ void WaterTable2::updateBathymetry(const GLfloat* bathymetryGrid,GLContextData& 
 	glActiveTextureARB(GL_TEXTURE2_ARB);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,dataItem->quantityTextureObjects[dataItem->currentQuantity]);
 	glUniform1iARB(dataItem->bathymetryShaderUniformLocations[2],2);
+	
+	glUniformARB(dataItem->bathymetryShaderUniformLocations[3],baseWaterLevel);
+	glUniformARB(dataItem->bathymetryShaderUniformLocations[4],oldBaseWaterLevel);
 	
 	/* Run the bathymetry update: */
 	glBegin(GL_QUADS);

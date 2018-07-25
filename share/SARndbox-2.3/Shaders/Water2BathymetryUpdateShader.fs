@@ -43,25 +43,25 @@ void main()
 	/* Get the old quantity at the cell center: */
 	vec3 q=texture2DRect(quantitySampler,gl_FragCoord.xy).rgb;
 	
-	/* Update the water surface height: */
-	# if 0
-	gl_FragColor=vec4(max(q.x-bOld,0.0)+bNew,q.yz,0.0);
-	# else
-	float x = gl_FragCoord.x;
-	float y = gl_FragCoord.y;
+	/* Calculate the current water surface height */
 	float waterLevel = max(q.x-bOld, 0.0);
 	float height = bNew + waterLevel;
-	float xVal = max(height, baseWaterLevel);
-	if (oldBaseWaterLevel != baseWaterLevel)
+	
+	/* Check if a base water level has been set */
+	if (baseWaterLevel != -100.0)
 		{
-		// check if this is the first time baseWaterLevel has been set
-		if (oldBaseWaterLevel == -100.0f) xVal = baseWaterLevel;
-		// add water to coordinate if height is less than baseWaterLevel
-		// remove water from all coordinates if baseWaterLevel has decreased
-		else if (bNew < baseWaterLevel || baseWaterLevel < oldBaseWaterLevel) 
-			xVal = height + (baseWaterLevel-oldBaseWaterLevel);
+		/* Check if this is the first time a base water level has been set */
+		if (oldBaseWaterLevel == -100.0) height = max(height, baseWaterLevel);
+		
+		/* Set the minimum water height to the base water level */
+		else if (baseWaterLevel > oldBaseWaterLevel) 
+			height = max(height, baseWaterLevel);
+
+		/* Remove water if the base water level has decreased */
+		else if (baseWaterLevel < oldBaseWaterLevel && waterLevel > 0.0) 
+			height = max(height - (oldBaseWaterLevel-baseWaterLevel), bNew);
 		}
-	if (x < 4 || x > 636 || y < 4 || y > 476) xVal = max(height, baseWaterLevel);
-	gl_FragColor=vec4(xVal,q.yz,0.0);
-	#endif
+	
+	/* Set the new height */
+	gl_FragColor=vec4(height,q.yz,0.0);
 	}
