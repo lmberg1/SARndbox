@@ -688,6 +688,14 @@ void printUsage(void)
 	std::cout<<"  -bwl <base water level>"<<std::endl;
 	std::cout<<"     Enables setting a base water level and sets the base water level in the sandbox"<<std::endl;
 	std::cout<<"     Default: -2.0"<<std::endl;
+	std::cout<<"  -vgr <vegetation growth rate>"<<std::endl;
+	std::cout<<"     Sets the vegetation growth rate. A base water level must be set for the"<<std::endl;
+	std::cout<<"     vegetation simulation to work"<<std::endl;
+	std::cout<<"     Default: 5.0"<<std::endl;
+	std::cout<<"  -vht <vegetation hydration threshold>"<<std::endl;
+	std::cout<<"     Sets the minimum level of hydration for vegetation to grow. A base water"<<std::endl;
+	std::cout<<"     level must be set for the vegetation simulation to work"<<std::endl;
+	std::cout<<"     Default: 0.1"<<std::endl;
 	std::cout<<"  -ws <water speed> <water max steps>"<<std::endl;
 	std::cout<<"     Sets the relative speed of the water simulation and the maximum"<<std::endl;
 	std::cout<<"     number of simulation steps per frame"<<std::endl;
@@ -803,6 +811,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
 	enableBaseWaterLevel=cfg.hasTag("./baseWaterLevel");
 	baseWaterLevel=cfg.retrieveValue<GLfloat>("./baseWaterLevel",-2.0f);
+	float vegetationGrowthRate=cfg.retrieveValue<GLfloat>("./vegetationGrowthRate",5.0f);
+	float hydrationThreshold=cfg.retrieveValue<GLfloat>("./hydrationThreshold",0.1f);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	defaultDemVerticalShift=cfg.retrieveValue<float>("./defaultDemVerticalShift",-3.5f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
@@ -896,6 +906,16 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				++i;
 				enableBaseWaterLevel=true;
 				baseWaterLevel=GLfloat(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"vgr")==0)
+				{
+				++i;
+				vegetationGrowthRate=GLfloat(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"vht")==0)
+				{
+				++i;
+				hydrationThreshold=GLfloat(atof(argv[i]));
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
@@ -1166,6 +1186,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
 		waterTable->setWaterDeposit(evaporationRate);
+		waterTable->setVegetationGrowth(vegetationGrowthRate);
+		waterTable->setHydrationThreshold(hydrationThreshold);
 
 		/* Set up base water level */
 		if(baseWaterLevelSlider!=0)
@@ -1485,15 +1507,17 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
-	
-		/* Run vegetation simulation */
-		waterTable->runVegetationSimulation(contextData);
 		
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();
 		
 		if (enableBaseWaterLevel && waterTable->bathymetryIsInitialized())
+			{
 			waterTable->setBaseWaterLevel(baseWaterLevel);
+			
+			/* Run vegetation simulation */
+			waterTable->runVegetationSimulation(contextData);
+			}
 		}
 	
 	/* Calculate the projection matrix: */

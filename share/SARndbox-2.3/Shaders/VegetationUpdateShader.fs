@@ -23,7 +23,9 @@ uniform sampler2DRect hydrationSampler;
 uniform sampler2DRect quantitySampler;
 uniform sampler2DRect bathymetrySampler;
 uniform sampler2DRect randomSampler;
+uniform float vegetationRange;
 uniform float growthRate;
+uniform float hydrationThreshold;
 uniform float color;
 uniform bool clearVeg;
 
@@ -52,32 +54,33 @@ void main()
 	
 	/* Vegetation cannot grow if insufficient hydration or if it's underwater
 	   Set vegetation to zero if clearVeg flag is true */
-	if (hydration <= 0.01 || waterHeight > 0.0 || clearVeg) 
+	if (hydration <= hydrationThreshold || waterHeight > 0.01 || clearVeg) 
 		gl_FragColor=vec4(0.0,0.0,0.0,0.0);
+	
 	/* Don't change vegetation if it already exists */
 	else if (vegetation > 0.0)
 		gl_FragColor=vec4(vegetation, 0.0, 0.0, 0.0);
+	
+	/* Grow vegetation based on probability of growth */
 	else
 		{
+		/* Calculate proximity to other pieces of vegetation */
+		float proximity = 0.0;
 		float x = gl_FragCoord.x;
 		float y = gl_FragCoord.y;
-	
-		/* minumum distance to another piece of vegetation to grow */
-		float range = 10.0; 
-		
-		/* Calculate probability that vegetation grows */
-		float probability = 0.0;
-		for (int i = -range; i < range; i++)
-			for (int j = -range; j < range; j++)
+		for (int i = -vegetationRange; i < vegetationRange; i++)
+			for (int j = -vegetationRange; j < vegetationRange; j++)
 			{
 			float dist = distBetween(x, y, x+i, y+j);
 			float v = texture2DRect(vegetationSampler, vec2(x+i, y+j)).r;
 			
-			/* probability of growth increases with proximity to 
-			   other pieces of vegetation */
-			if (dist <= range && v > 0.0)
-				probability = max(probability, (range - dist)/range);
+			if (dist <= vegetationRange && v > 0.0)
+				proximity = max(proximity, (vegetationRange - dist)/vegetationRange);
 			}
+		
+		/* probability increases with closer proximity to other vegetation */
+		float proximityWeight = 6.0;
+		float probability = pow(proximity, proximityWeight);
 	
 		/* probability increases with higher level of hydration */
 		float hydrationWeight = 5.0;
@@ -91,7 +94,5 @@ void main()
 		float random=texture2DRect(randomSampler, gl_FragCoord.xy).r;
 		if (random < probability)
 			gl_FragColor=vec4(color,0.0,0.0,0.0);
-		else 
-			gl_FragColor=vec4(vegetation,0.0,0.0,0.0);
 		}
 }
