@@ -80,6 +80,7 @@ class SurfaceRenderer:public GLObject
 	
 	ElevationColorMap* elevationColorMap; // Pointer to a color map for topographic elevation map coloring
 	ElevationColorMap* slopeColorMap; // Pointer to a color map for topographic slope map coloring
+	ElevationColorMap* vegetationColorMap; // Pointer to a color map for vegetation coloring
 	
 	Image* image; // Pointer to an image to be displayed
 	
@@ -113,6 +114,7 @@ class SurfaceRenderer:public GLObject
 	void setShowSlope(bool newShowSlope); // Sets the show slope flag
 	void setElevationColorMap(ElevationColorMap* newElevationColorMap); // Sets an elevation color map
 	void setSlopeColorMap(ElevationColorMap* newSlopeColorMap); // Sets a slope color map
+	void setVegetationColorMap(ElevationColorMap* newVegetationColorMap); // Sets a vegetation color map
 	void setDem(DEM* newDem); // Sets a pre-made digital elevation model to create a zero surface for height color mapping
 	void setImage(Image* newImage); // Sets a pre-made digital elevation model to create a zero surface for height color mapping
 	void setDemDistScale(GLfloat newDemDistScale); // Sets the deviation from DEM to surface to saturate the deviation color map

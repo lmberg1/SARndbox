@@ -169,6 +169,7 @@ Sandbox::RenderSettings::RenderSettings(void)
 	 useShadows(false),
 	 elevationColorMap(0),
 	 slopeColorMap(0),
+	 vegetationColorMap(0),
 	 useContourLines(true),contourLineSpacing(0.75f),
 	 renderWaterSurface(false),waterOpacity(2.0f),
 	 showSlope(false),
@@ -184,6 +185,7 @@ Sandbox::RenderSettings::RenderSettings(const Sandbox::RenderSettings& source)
 	 useShadows(source.useShadows),
 	 elevationColorMap(source.elevationColorMap!=0?new ElevationColorMap(*source.elevationColorMap):0),
 	 slopeColorMap(source.slopeColorMap!=0?new ElevationColorMap(*source.slopeColorMap):0),
+	 vegetationColorMap(source.vegetationColorMap!=0?new ElevationColorMap(*source.vegetationColorMap):0),
 	 useContourLines(source.useContourLines),contourLineSpacing(source.contourLineSpacing),
 	 renderWaterSurface(source.renderWaterSurface),waterOpacity(source.waterOpacity),
 	 showSlope(source.showSlope),
@@ -197,6 +199,7 @@ Sandbox::RenderSettings::~RenderSettings(void)
 	delete waterRenderer;
 	delete elevationColorMap;
 	delete slopeColorMap;
+	delete vegetationColorMap;
 	}
 
 void Sandbox::RenderSettings::loadProjectorTransform(const char* projectorTransformName)
@@ -261,6 +264,23 @@ void Sandbox::RenderSettings::loadSlopeMap(const char* heightMapName)
 		/* Delete the previous elevation color map and assign the new one: */
 		delete slopeColorMap;
 		slopeColorMap=newSlopeColorMap;
+		}
+	catch(std::runtime_error err)
+		{
+		std::cerr<<"Ignoring height map due to exception "<<err.what()<<std::endl;
+		}
+	}
+	
+void Sandbox::RenderSettings::loadVegetationMap(const char* heightMapName)
+	{
+	try
+		{
+		/* Load the elevation color map of the given name: */
+		ElevationColorMap* newVegetationColorMap=new ElevationColorMap(heightMapName);
+		
+		/* Delete the previous elevation color map and assign the new one: */
+		delete vegetationColorMap;
+		vegetationColorMap=newVegetationColorMap;
 		}
 	catch(std::runtime_error err)
 		{
@@ -619,7 +639,7 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalScaleSlider->getTextField()->setFieldWidth(7);
 	demVerticalScaleSlider->getTextField()->setPrecision(4);
 	demVerticalScaleSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalScaleSlider->setValueRange(0.01,40.0,0.1);
+	demVerticalScaleSlider->setValueRange(0.01,100.0,0.1);
 	demVerticalScaleSlider->getSlider()->addNotch(1.0);
 	demVerticalScaleSlider->setValue(1.0);
 	demVerticalScaleSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalScaleSliderCallback);
@@ -736,13 +756,18 @@ void printUsage(void)
 	std::cout<<"  -nhm"<<std::endl;
 	std::cout<<"     Disables elevation color mapping"<<std::endl;
 	std::cout<<"  -uhm [elevation color map file name]"<<std::endl;
-	std::cout<<"     Enables elevation and slope color mapping and loads the elevation color map from"<<std::endl;
-	std::cout<<"     the file of the given name and the slope color map from the default file"<<std::endl;
+	std::cout<<"     Enables elevation, slope, and vegetation color mapping."<<std::endl;
+	std::cout<<"     Loads the elevation color map from the file of the given name"<<std::endl;
+	std::cout<<"     and the slope and vegetation color maps from the default files"<<std::endl;
 	std::cout<<"     Default elevation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME<<std::endl;
 	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
+	std::cout<<"     Default vegetation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME<<std::endl;
 	std::cout<<"  -usm [slope color map file name]"<<std::endl;
 	std::cout<<"     Loads the slope color map from the file of the given name"<<std::endl;
 	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
+	std::cout<<"  -uvm [vegetation color map file name]"<<std::endl;
+	std::cout<<"     Loads the vegetation color map from the file of the given name"<<std::endl;
+	std::cout<<"     Default vegetation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME<<std::endl;
 	std::cout<<"  -ncl"<<std::endl;
 	std::cout<<"     Disables topographic contour lines"<<std::endl;
 	std::cout<<"  -ucl [contour line spacing]"<<std::endl;
@@ -811,6 +836,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
 	enableBaseWaterLevel=cfg.hasTag("./baseWaterLevel");
 	baseWaterLevel=cfg.retrieveValue<GLfloat>("./baseWaterLevel",-2.0f);
+	flipToolPosition=cfg.retrieveValue<bool>("./flipToolPosition", false);
 	float vegetationGrowthRate=cfg.retrieveValue<GLfloat>("./vegetationGrowthRate",5.0f);
 	float hydrationThreshold=cfg.retrieveValue<GLfloat>("./hydrationThreshold",0.1f);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
@@ -917,6 +943,10 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				++i;
 				hydrationThreshold=GLfloat(atof(argv[i]));
 				}
+			else if(strcasecmp(argv[i]+1,"ftp")==0)
+				{
+				flipToolPosition=true;
+				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
 				++i;
@@ -995,6 +1025,9 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					}
 				/* Load the default slope color map: */
 				renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+				
+				/* Load the default vegetation color map: */
+				renderSettings.back().loadVegetationMap(CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME);
 				}
 			else if(strcasecmp(argv[i]+1,"usm")==0)
 				{
@@ -1008,6 +1041,20 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					{
 					/* Load the default slope color map: */
 					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+					}
+				}
+			else if(strcasecmp(argv[i]+1,"uvm")==0)
+				{
+				if(i+1<argc&&argv[i+1][0]!='-')
+					{
+					/* Load the vegetation color map file specified in the next argument: */
+					++i;
+					renderSettings.back().loadVegetationMap(argv[i]);
+					}
+				else
+					{
+					/* Load the default vegetation color map: */
+					renderSettings.back().loadVegetationMap(CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME);
 					}
 				}
 			else if(strcasecmp(argv[i]+1,"ncl")==0)
@@ -1219,6 +1266,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rsIt->surfaceRenderer->setContourLineDistance(rsIt->contourLineSpacing);
 		rsIt->surfaceRenderer->setElevationColorMap(rsIt->elevationColorMap);
 		rsIt->surfaceRenderer->setSlopeColorMap(rsIt->slopeColorMap);
+		rsIt->surfaceRenderer->setVegetationColorMap(rsIt->vegetationColorMap);
 		rsIt->surfaceRenderer->setIlluminate(rsIt->hillshade);
 		rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
 		if(waterTable!=0)

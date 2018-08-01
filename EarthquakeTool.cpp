@@ -150,7 +150,7 @@ void EarthquakeTool::createPlanarPerturbation(OPoint p1, OPoint p2, double pertu
 			/* Perturb the pixel if it's inside the plane. Determine the 
 		         direction of propogation based on the order the points were chosen. */
 			float y = i*slope + yint;
-			if ((p1[1] <= p2[1] && j <= y) || (p1[1] >= p2[1] && j >= y)) 
+			if ((p1[1] < p2[1] && j <= y) || (p1[1] > p2[1] && j >= y)) 
 				*pPtr += perturbation;
 		}
 	}
@@ -228,6 +228,11 @@ void EarthquakeTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::Butto
 			
 			/* Get position of cursor in object space and convert to pixels */
 			OPoint cursorPos = Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
+			if (application->flipToolPosition)
+				{
+				cursorPos[0]=-cursorPos[0];
+				cursorPos[1]=-cursorPos[1];
+				}
 			OPoint p1 = cameraTransform.transform(cursorPos);
 			
 			if (!hasPlanePoint(planePoints[0]))
@@ -258,6 +263,11 @@ void EarthquakeTool::frame(void)
 			{
 			/* Get position of cursor in object space and convert to pixels */
 			OPoint cursorPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
+			if (application->flipToolPosition)
+				{
+				cursorPos[0]=-cursorPos[0];
+				cursorPos[1]=-cursorPos[1];
+				}
 			OPoint center = cameraTransform.transform(cursorPos);
 		
 			/* Make sure pixel center is in bounds of the box */

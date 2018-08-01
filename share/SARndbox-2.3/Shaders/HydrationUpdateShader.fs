@@ -2,6 +2,7 @@
 HydrationUpdateShader - Shader to update the current hydration level
 Copyright (c) 2012 Oliver Kreylos
 Modified by Simon Johansson 2015
+Modified by Lauren von Berg 2018
 This file is part of the Augmented Reality Sandbox (SARndbox).
 The Augmented Reality Sandbox is free software; you can redistribute it
 and/or modify it under the terms of the GNU General Public License as

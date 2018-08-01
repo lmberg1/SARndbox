@@ -2,6 +2,7 @@
 VegetationUpdateShader - Shader to update the current vegetation level
 Copyright (c) 2012 Oliver Kreylos
 Modified by Simon Johansson 2015
+Modified by Lauren von Berg 2018
 This file is part of the Augmented Reality Sandbox (SARndbox).
 The Augmented Reality Sandbox is free software; you can redistribute it
 and/or modify it under the terms of the GNU General Public License as
@@ -54,7 +55,7 @@ void main()
 	
 	/* Vegetation cannot grow if insufficient hydration or if it's underwater
 	   Set vegetation to zero if clearVeg flag is true */
-	if (hydration <= hydrationThreshold || waterHeight > 0.01 || clearVeg) 
+	if (hydration <= hydrationThreshold || waterHeight > 0.1 || clearVeg) 
 		gl_FragColor=vec4(0.0,0.0,0.0,0.0);
 	
 	/* Don't change vegetation if it already exists */

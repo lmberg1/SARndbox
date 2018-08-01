@@ -30,5 +30,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #define CONFIG_DEFAULTPROJECTIONMATRIXFILENAME "ProjectorMatrix.dat"
 #define CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME "HeightColorMap.cpt"
 #define CONFIG_DEFAULTSLOPECOLORMAPFILENAME "SlopeColorMap.cpt"
+#define CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME "VegetationColorMap.cpt"
 
 #endif
