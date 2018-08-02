@@ -82,6 +82,7 @@ class ImageTool:public Image,public Vrui::Tool,public Vrui::Application::Tool<Sa
 	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);
+	virtual void frame(void);
 	};
 
 #endif

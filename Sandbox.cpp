@@ -456,6 +456,21 @@ void Sandbox::demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChan
 	{
 	activeDem->setDemVerticalScale((float) cbData->value);
 	}
+	
+void Sandbox::rotateImageCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleRotate();
+	}
+	
+void Sandbox::flipImageXCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleFlipX();
+	}
+	
+void Sandbox::flipImageYCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleFlipY();
+	}
 
 GLMotif::PopupMenu* Sandbox::createMainMenu(void)
 	{
@@ -639,7 +654,7 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalScaleSlider->getTextField()->setFieldWidth(7);
 	demVerticalScaleSlider->getTextField()->setPrecision(4);
 	demVerticalScaleSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalScaleSlider->setValueRange(0.01,100.0,0.1);
+	demVerticalScaleSlider->setValueRange(0.001,1000.0,0.1);
 	demVerticalScaleSlider->getSlider()->addNotch(1.0);
 	demVerticalScaleSlider->setValue(1.0);
 	demVerticalScaleSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalScaleSliderCallback);
@@ -650,10 +665,21 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalShiftSlider->getTextField()->setFieldWidth(7);
 	demVerticalShiftSlider->getTextField()->setPrecision(4);
 	demVerticalShiftSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalShiftSlider->setValueRange(-20.0,20.0,0.1);
+	demVerticalShiftSlider->setValueRange(-1000.0,1000.0,0.1);
 	demVerticalShiftSlider->getSlider()->addNotch(defaultDemVerticalShift);
 	demVerticalShiftSlider->setValue(defaultDemVerticalShift);
 	demVerticalShiftSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalShiftSliderCallback);
+	
+	new GLMotif::Label("image",demControlDialog,"Image Orientation Control");
+	
+	GLMotif::Button* rotateImage=new GLMotif::Button("RotateImageButton",demControlDialog,"Rotate Image");
+	rotateImage->getSelectCallbacks().add(this,&Sandbox::rotateImageCallback);
+	
+	GLMotif::Button* flipImageHor=new GLMotif::Button("FlipImageXButton",demControlDialog,"Flip Image Horizontally");
+	flipImageHor->getSelectCallbacks().add(this,&Sandbox::flipImageXCallback);
+	
+	GLMotif::Button* flipImageVer=new GLMotif::Button("FlipImageYButton",demControlDialog,"Flip Image Vertically");
+	flipImageVer->getSelectCallbacks().add(this,&Sandbox::flipImageYCallback);
 	
 	demControlDialog->manageChild();
 	
@@ -1537,7 +1563,9 @@ void Sandbox::display(GLContextData& contextData) const
 		if (earthquakeManager->hasBathymetryGrid()) 
 			{
 			GLfloat *bathymetryGrid = earthquakeManager->getBathymetryGrid();
+			waterTable->setCreateEarthquake(true);
 			waterTable->updateBathymetry((const GLfloat *) bathymetryGrid, contextData);
+			waterTable->setCreateEarthquake(false);
 			earthquakeManager->setBathymetryGrid(NULL);
 			}
 		else {

@@ -187,3 +187,15 @@ void ImageTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCall
 			application->toggleImage(this);
 		}
 	}
+	
+void ImageTool::frame(void)
+	{
+	if (!imageFileName.empty())
+		{
+		if (getChangeOrientation())
+			{
+			loadImageFile(imageFileName.c_str());
+			setChangeOrientation(false);
+			}
+		}
+	}

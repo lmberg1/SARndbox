@@ -202,6 +202,9 @@ class Sandbox:public Vrui::Application,public GLObject
 	void earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void rotateImageCallback(Misc::CallbackData* cbData);
+	void flipImageXCallback(Misc::CallbackData* cbData);
+	void flipImageYCallback(Misc::CallbackData* cbData);
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
 	GLMotif::PopupWindow* createEarthquakeControlDialog(void);

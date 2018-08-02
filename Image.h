@@ -50,6 +50,10 @@ class Image:public GLObject
 	OGTransform transform; // Transformation from camera space to image space
 	PTransform imageTransform; // Full transformation matrix from camera space to image pixel space
 	GLfloat imageTransformMatrix[16]; // Full transformation matrix from camera space to image pixel space to upload to OpenGL
+	bool rotateImage;
+	bool flipImageX;
+	bool flipImageY;
+	bool changeOrientation;
 	
 	/* Private methods: */
 	void calcMatrix(void); // Calculates the camera space to image pixel space transformation
@@ -72,6 +76,29 @@ class Image:public GLObject
 	const PTransform& getImageTransform(void) const // Returns the full transformation from camera space to image pixel space
 		{
 		return imageTransform;
+		}
+	void toggleRotate()
+		{
+		rotateImage=!rotateImage;
+		changeOrientation=true;
+		}
+	void toggleFlipX()
+		{
+		flipImageX=!flipImageX;
+		changeOrientation=true;
+		}
+	void toggleFlipY()
+		{
+		flipImageY=!flipImageY;
+		changeOrientation=true;
+		}
+	bool getChangeOrientation(void)
+		{
+		return changeOrientation;
+		}
+	void setChangeOrientation(bool newChangeOrientation)
+		{
+		changeOrientation=newChangeOrientation;
 		}
 	void bindTexture(GLContextData& contextData) const; // Binds the image texture object to the currently active texture unit
 	void uploadImageTransform(GLint location) const; // Uploads the image transformation into the GLSL 4x4 matrix at the given uniform location
