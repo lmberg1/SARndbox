@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <Geometry/Matrix.h>
 #include <limits>
 
+#include <stdio.h>
+
 /******************************
 Methods of class DEM::DataItem:
 ******************************/
@@ -118,21 +120,24 @@ void DEM::load(const char* demFileName)
 	IO::FilePtr demFile=IO::openFile(demFileName);
 	demFile->setEndianness(Misc::LittleEndian);
 	demFile->read<int>(demSize,2);
+	if (dem != 0)
+		delete[] dem;
 	dem=new float[demSize[1]*demSize[0]];
 	for(int i=0;i<4;++i)
 		demBox[i]=double(demFile->read<float>());
 	demFile->read<float>(dem,demSize[1]*demSize[0]);
 	
+	/* Scale dem values so that all elevation values are between 0 and 100 */
+	/*
 	float min = calcMinElevation();
 	float max = calcMaxElevation();
-	
-	/* Scale dem values so that all elevation values are between 0 and 100 */
 	float* demPtr = dem;
 	for(int i=0; i<demSize[1]*demSize[0]; i++, demPtr++)
 		{
 		*demPtr -= min;
 		*demPtr *= 100.0/(max-min);
 		}
+	*/
 	
 	/* Update the DEM transformation: */
 	calcMatrix();

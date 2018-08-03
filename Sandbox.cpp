@@ -320,19 +320,30 @@ void Sandbox::toggleDEM(DEM* dem)
 		}
 	else
 		{
+		/* Deactivate the active image if it exists */
+		if (activeImage != 0) toggleImage(activeImage);
+		
 		/* Activate this DEM: */
 		activeDem=dem;
 		
 		/* Set the dem control dialog slider values */
-		if (demVerticalScaleSlider != 0)
+		if (activeDem != 0 && demVerticalScaleSlider != 0)
 			demVerticalScaleSlider->setValue(activeDem->getDemVerticalScale());
-		if (demVerticalShiftSlider != 0);
+		if (activeDem != 0 && demVerticalShiftSlider != 0);
 			demVerticalShiftSlider->setValue(activeDem->getDemVerticalShift());
 		}
 	/* Enable DEM matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		{
+		/* Deactivate slope map if it's showing */
+		if (rsIt->showSlope) 
+			{
+			rsIt->showSlope=!rsIt->showSlope;
+			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+			}
 		if(rsIt->fixProjectorView)
 			rsIt->surfaceRenderer->setDem(activeDem);
+		}
 	}
 	
 void Sandbox::toggleImage(Image* image)
@@ -345,17 +356,32 @@ void Sandbox::toggleImage(Image* image)
 		}
 	else
 		{
+		/* Deactive the active dem if it exists */
+		if (activeDem!=0) toggleDEM(activeDem);
+		
 		/* Activate this Image: */
 		activeImage=image;
 		}
 	
 	/* Enable image matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		{
+		/* Deactivate slope map if it's showing */
+		if (rsIt->showSlope) 
+			{
+			rsIt->showSlope=!rsIt->showSlope;
+			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+			}
 		rsIt->surfaceRenderer->setImage(activeImage);
+		}
 	}
 	
 void Sandbox::toggleSlope(void)
 	{
+	/* Deactivate the active image/dem if they exist */
+	if (activeImage!=0) toggleImage(activeImage);
+	if (activeDem!=0) toggleDEM(activeDem);
+	
 	/* Enable slope matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		{
@@ -439,22 +465,26 @@ void Sandbox::baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChange
 	
 void Sandbox::earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	earthquakeManager->setEarthquakeRadius(GLfloat(cbData->value));
+	if (earthquakeManager != 0)
+		earthquakeManager->setEarthquakeRadius(GLfloat(cbData->value));
 	}
 
 void Sandbox::earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
+	if (earthquakeManager != 0)
+		earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
 	}
 	
 void Sandbox::demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	activeDem->setDemVerticalShift((float) cbData->value);
+	if (activeDem != 0)	
+		activeDem->setDemVerticalShift((float) cbData->value);
 	}
 
 void Sandbox::demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	activeDem->setDemVerticalScale((float) cbData->value);
+	if (activeDem != 0)
+		activeDem->setDemVerticalScale((float) cbData->value);
 	}
 	
 void Sandbox::rotateImageCallback(Misc::CallbackData* cbData)
@@ -654,7 +684,7 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalScaleSlider->getTextField()->setFieldWidth(7);
 	demVerticalScaleSlider->getTextField()->setPrecision(4);
 	demVerticalScaleSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalScaleSlider->setValueRange(0.001,1000.0,0.1);
+	demVerticalScaleSlider->setValueRange(0.01,20.0,0.01);
 	demVerticalScaleSlider->getSlider()->addNotch(1.0);
 	demVerticalScaleSlider->setValue(1.0);
 	demVerticalScaleSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalScaleSliderCallback);
@@ -665,7 +695,7 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalShiftSlider->getTextField()->setFieldWidth(7);
 	demVerticalShiftSlider->getTextField()->setPrecision(4);
 	demVerticalShiftSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalShiftSlider->setValueRange(-1000.0,1000.0,0.1);
+	demVerticalShiftSlider->setValueRange(-20.0,20.0,0.1);
 	demVerticalShiftSlider->getSlider()->addNotch(defaultDemVerticalShift);
 	demVerticalShiftSlider->setValue(defaultDemVerticalShift);
 	demVerticalShiftSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalShiftSliderCallback);
@@ -1337,7 +1367,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	/* Initialize the custom tool classes: */
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
-	SlopeTool::initClass(*Vrui::getToolManager());
 	ColorMapTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
@@ -1347,6 +1376,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		LocalWaterTool::initClass(*Vrui::getToolManager());
 		AddVegetationTool::initClass(*Vrui::getToolManager());
 		WaterLevelTool::initClass(*Vrui::getToolManager());
+		SlopeTool::initClass(*Vrui::getToolManager());
 		}
 	addEventTool("Pause Topography",0,0);
 	
@@ -1563,9 +1593,7 @@ void Sandbox::display(GLContextData& contextData) const
 		if (earthquakeManager->hasBathymetryGrid()) 
 			{
 			GLfloat *bathymetryGrid = earthquakeManager->getBathymetryGrid();
-			waterTable->setCreateEarthquake(true);
 			waterTable->updateBathymetry((const GLfloat *) bathymetryGrid, contextData);
-			waterTable->setCreateEarthquake(false);
 			earthquakeManager->setBathymetryGrid(NULL);
 			}
 		else {

@@ -133,6 +133,7 @@ void Image::load(const char* imageFileName)
 	imageBox[1] = imageSize[1];
 	imageBox[2] = imageSize[0];
 	imageBox[3] = 0.0;
+	if (rgb != 0) delete[] rgb;
 	rgb=new float[imageSize[1]*imageSize[0]*3];
 	
 	int ind = 0;
