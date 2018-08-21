@@ -65,16 +65,15 @@ class EarthquakeTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	private:
 	static EarthquakeToolFactory* factory; // Pointer to the factory object for this class
 	GLfloat* bathymetryBuffer; // Bathymetry grid buffer
+	OGTransform cameraTransform; // Tranformation from camera space (button position) to pixel space
 	bool requestPending; // Flag if this tool has a pending request to retrieve a bathymetry grid
-	OPoint basePlaneCorners[4]; // Corners of the configured sandbox area
-	int planePoints[2][3]; // Two points that determine the bounding line of a planar perturbation
+	OPoint planePoints[2]; // Two points that determine the bounding line of a planar perturbation
 	bool isCircular; // Flag if current perturbation is circular
 	bool isPlanar; // Flag if current perturbation is planar
 	
 	/* Private methods: */
-	void createCircularPerturbation(int center[], int radius, double perturbation); // Creates circular perturbation in bathymetry grid
-	void createPlanarPerturbation(int p1[], int p2[], double perturbation); // Creates planar perturbation in bathymetry grid
-	int getPixelPos(OPoint p1, const char comp); // Get the pixel position of a object space point compenent (x | y)
+	void createCircularPerturbation(OPoint center, int radius, double perturbation); // Creates circular perturbation in bathymetry grid
+	void createPlanarPerturbation(OPoint p1, OPoint p2, double perturbation); // Creates planar perturbation in bathymetry grid
 	
 	/* Constructors and destructors: */
 	public:
@@ -83,6 +82,7 @@ class EarthquakeTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	virtual ~EarthquakeTool(void);
 	
 	/* Methods from class Vrui::Tool: */
+	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);
 	virtual void frame(void);

@@ -88,7 +88,10 @@ void Image::calcMatrix(void)
 
 Image::Image(void)
 	:rgb(0),
-	 transform(OGTransform::identity)
+	 transform(OGTransform::identity),
+	 rotateImage(false),
+	 flipImageX(false),
+	 flipImageY(false)
 	{
 	imageSize[0]=imageSize[1]=0;
 	}
@@ -118,12 +121,19 @@ void Image::load(const char* imageFileName)
 	{
 	/* Read the image file: */
 	CImg<float> image(imageFileName);
+	if (rotateImage)
+		image.rotate(180.0);
+	if (flipImageX)
+		image.mirror('x');
+	if (flipImageY)
+		image.mirror('y');
 	imageSize[0] = image.width();
 	imageSize[1] = image.height();
 	imageBox[0] = 0.0;
 	imageBox[1] = imageSize[1];
 	imageBox[2] = imageSize[0];
 	imageBox[3] = 0.0;
+	if (rgb != 0) delete[] rgb;
 	rgb=new float[imageSize[1]*imageSize[0]*3];
 	
 	int ind = 0;

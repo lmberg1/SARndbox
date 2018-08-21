@@ -74,15 +74,18 @@ const Vrui::ToolFactory* WaterLevelTool::getFactory(void) const
 
 void WaterLevelTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData)
 	{
-	float newBaseWaterLevel;
-	if(buttonSlotIndex == 0)
-		// increase water level
-		newBaseWaterLevel = application->baseWaterLevel + waterLevelStep;
-	else 
-		// decrease water level
-		newBaseWaterLevel = application->baseWaterLevel - waterLevelStep;
+	if(cbData->newButtonState)
+		{
+		float newBaseWaterLevel;
+		if(buttonSlotIndex == 0)
+			// increase water level
+			newBaseWaterLevel = application->baseWaterLevel + waterLevelStep;
+		else 
+			// decrease water level
+			newBaseWaterLevel = application->baseWaterLevel - waterLevelStep;
 	
-	application->baseWaterLevel = newBaseWaterLevel;
-	if(application->baseWaterLevelSlider != 0);
-		application->baseWaterLevelSlider->setValue(newBaseWaterLevel);
+		application->baseWaterLevel = newBaseWaterLevel;
+		if(application->baseWaterLevelSlider)
+			application->baseWaterLevelSlider->setValue(newBaseWaterLevel);
+		}
 	}

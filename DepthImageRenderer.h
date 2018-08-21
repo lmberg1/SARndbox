@@ -97,7 +97,7 @@ class DepthImageRenderer:public GLObject
 		return basePlane;
 		}
 	void setDepthProjection(const PTransform& newDepthProjection); // Sets a new depth unprojection matrix
-	void setBasePlane(const Plane& newBasePlane); // Sets a new base plane for elevation rendering
+	void setBasePlane(const Plane& newBasePlane, bool updateTransform); // Sets a new base plane for elevation rendering
 	void setDepthImage(const Kinect::FrameBuffer& newDepthImage); // Sets a new depth image for subsequent surface rendering
 	Scalar intersectLine(const Point& p0,const Point& p1,Scalar elevationMin,Scalar elevationMax) const; // Intersects a line segment with the current depth image in camera space; returns intersection point's parameter along line
 	unsigned int getDepthImageVersion(void) const // Returns the version number of the current depth image

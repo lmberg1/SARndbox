@@ -110,6 +110,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "DEMTool.h"
 #include "ImageTool.h"
 #include "SlopeTool.h"
+#include "ColorMapTool.h"
 #include "WaterLevelTool.h"
 #include "AddVegetationTool.h"
 #include "BathymetrySaverTool.h"
@@ -168,6 +169,7 @@ Sandbox::RenderSettings::RenderSettings(void)
 	 useShadows(false),
 	 elevationColorMap(0),
 	 slopeColorMap(0),
+	 vegetationColorMap(0),
 	 useContourLines(true),contourLineSpacing(0.75f),
 	 renderWaterSurface(false),waterOpacity(2.0f),
 	 showSlope(false),
@@ -183,6 +185,7 @@ Sandbox::RenderSettings::RenderSettings(const Sandbox::RenderSettings& source)
 	 useShadows(source.useShadows),
 	 elevationColorMap(source.elevationColorMap!=0?new ElevationColorMap(*source.elevationColorMap):0),
 	 slopeColorMap(source.slopeColorMap!=0?new ElevationColorMap(*source.slopeColorMap):0),
+	 vegetationColorMap(source.vegetationColorMap!=0?new ElevationColorMap(*source.vegetationColorMap):0),
 	 useContourLines(source.useContourLines),contourLineSpacing(source.contourLineSpacing),
 	 renderWaterSurface(source.renderWaterSurface),waterOpacity(source.waterOpacity),
 	 showSlope(source.showSlope),
@@ -196,6 +199,7 @@ Sandbox::RenderSettings::~RenderSettings(void)
 	delete waterRenderer;
 	delete elevationColorMap;
 	delete slopeColorMap;
+	delete vegetationColorMap;
 	}
 
 void Sandbox::RenderSettings::loadProjectorTransform(const char* projectorTransformName)
@@ -266,6 +270,23 @@ void Sandbox::RenderSettings::loadSlopeMap(const char* heightMapName)
 		std::cerr<<"Ignoring height map due to exception "<<err.what()<<std::endl;
 		}
 	}
+	
+void Sandbox::RenderSettings::loadVegetationMap(const char* heightMapName)
+	{
+	try
+		{
+		/* Load the elevation color map of the given name: */
+		ElevationColorMap* newVegetationColorMap=new ElevationColorMap(heightMapName);
+		
+		/* Delete the previous elevation color map and assign the new one: */
+		delete vegetationColorMap;
+		vegetationColorMap=newVegetationColorMap;
+		}
+	catch(std::runtime_error err)
+		{
+		std::cerr<<"Ignoring height map due to exception "<<err.what()<<std::endl;
+		}
+	}
 
 /************************
 Methods of class Sandbox:
@@ -299,19 +320,30 @@ void Sandbox::toggleDEM(DEM* dem)
 		}
 	else
 		{
+		/* Deactivate the active image if it exists */
+		if (activeImage != 0) toggleImage(activeImage);
+		
 		/* Activate this DEM: */
 		activeDem=dem;
 		
 		/* Set the dem control dialog slider values */
-		if (demVerticalScaleSlider != 0)
+		if (activeDem != 0 && demVerticalScaleSlider != 0)
 			demVerticalScaleSlider->setValue(activeDem->getDemVerticalScale());
-		if (demVerticalShiftSlider != 0);
+		if (activeDem != 0 && demVerticalShiftSlider != 0);
 			demVerticalShiftSlider->setValue(activeDem->getDemVerticalShift());
 		}
 	/* Enable DEM matching in all surface renderers that use a fixed projector matrix, i.e., in all physical sandboxes: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		{
+		/* Deactivate slope map if it's showing */
+		if (rsIt->showSlope) 
+			{
+			rsIt->showSlope=!rsIt->showSlope;
+			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+			}
 		if(rsIt->fixProjectorView)
 			rsIt->surfaceRenderer->setDem(activeDem);
+		}
 	}
 	
 void Sandbox::toggleImage(Image* image)
@@ -324,17 +356,32 @@ void Sandbox::toggleImage(Image* image)
 		}
 	else
 		{
+		/* Deactive the active dem if it exists */
+		if (activeDem!=0) toggleDEM(activeDem);
+		
 		/* Activate this Image: */
 		activeImage=image;
 		}
 	
 	/* Enable image matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
+		{
+		/* Deactivate slope map if it's showing */
+		if (rsIt->showSlope) 
+			{
+			rsIt->showSlope=!rsIt->showSlope;
+			rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
+			}
 		rsIt->surfaceRenderer->setImage(activeImage);
+		}
 	}
 	
 void Sandbox::toggleSlope(void)
 	{
+	/* Deactivate the active image/dem if they exist */
+	if (activeImage!=0) toggleImage(activeImage);
+	if (activeDem!=0) toggleDEM(activeDem);
+	
 	/* Enable slope matching in all surface renderers */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
 		{
@@ -418,22 +465,41 @@ void Sandbox::baseWaterLevelSliderCallback(GLMotif::TextFieldSlider::ValueChange
 	
 void Sandbox::earthquakeRadiusSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	earthquakeManager->setEarthquakeRadius(GLfloat(cbData->value));
+	if (earthquakeManager != 0)
+		earthquakeManager->setEarthquakeRadius(GLfloat(cbData->value));
 	}
 
 void Sandbox::earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
+	if (earthquakeManager != 0)
+		earthquakeManager->setEarthquakePerturbation(GLfloat(cbData->value));
 	}
 	
 void Sandbox::demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	activeDem->setDemVerticalShift((float) cbData->value);
+	if (activeDem != 0)	
+		activeDem->setDemVerticalShift((float) cbData->value);
 	}
 
 void Sandbox::demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData)
 	{
-	activeDem->setDemVerticalScale((float) cbData->value);
+	if (activeDem != 0)
+		activeDem->setDemVerticalScale((float) cbData->value);
+	}
+	
+void Sandbox::rotateImageCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleRotate();
+	}
+	
+void Sandbox::flipImageXCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleFlipX();
+	}
+	
+void Sandbox::flipImageYCallback(Misc::CallbackData* cbData)
+	{
+	if (activeImage != 0) activeImage->toggleFlipY();
 	}
 
 GLMotif::PopupMenu* Sandbox::createMainMenu(void)
@@ -536,16 +602,19 @@ GLMotif::PopupWindow* Sandbox::createWaterControlDialog(void)
 	waterAttenuationSlider->setValue(1.0-double(waterTable->getAttenuation()));
 	waterAttenuationSlider->getValueChangedCallbacks().add(this,&Sandbox::waterAttenuationSliderCallback);
 
-	new GLMotif::Label("BaseWaterLevelLabel",waterControlDialog,"Base Water Level");
+	if (enableBaseWaterLevel)
+		{
+		new GLMotif::Label("BaseWaterLevelLabel",waterControlDialog,"Base Water Level");
 	
-	baseWaterLevelSlider=new GLMotif::TextFieldSlider("BaseWaterLevelSlider",waterControlDialog,8,ss.fontHeight*10.0f);
-	baseWaterLevelSlider->getTextField()->setFieldWidth(7);
-	baseWaterLevelSlider->getTextField()->setPrecision(4);
-	baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
-	baseWaterLevelSlider->getSlider()->addNotch(double(baseWaterLevel));
-	baseWaterLevelSlider->setValue(double(baseWaterLevel));
-	baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
+		baseWaterLevelSlider=new GLMotif::TextFieldSlider("BaseWaterLevelSlider",waterControlDialog,8,ss.fontHeight*10.0f);
+		baseWaterLevelSlider->getTextField()->setFieldWidth(7);
+		baseWaterLevelSlider->getTextField()->setPrecision(4);
+		baseWaterLevelSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
+		baseWaterLevelSlider->setValueRange(-10.0,10.0,0.05);
+		baseWaterLevelSlider->getSlider()->addNotch(double(baseWaterLevel));
+		baseWaterLevelSlider->setValue(double(baseWaterLevel));
+		baseWaterLevelSlider->getValueChangedCallbacks().add(this,&Sandbox::baseWaterLevelSliderCallback);
+		}
 	
 	waterControlDialog->manageChild();
 	
@@ -615,7 +684,7 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalScaleSlider->getTextField()->setFieldWidth(7);
 	demVerticalScaleSlider->getTextField()->setPrecision(4);
 	demVerticalScaleSlider->getTextField()->setFloatFormat(GLMotif::TextField::SMART);
-	demVerticalScaleSlider->setValueRange(0.01,40.0,0.1);
+	demVerticalScaleSlider->setValueRange(0.01,20.0,0.01);
 	demVerticalScaleSlider->getSlider()->addNotch(1.0);
 	demVerticalScaleSlider->setValue(1.0);
 	demVerticalScaleSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalScaleSliderCallback);
@@ -630,6 +699,17 @@ GLMotif::PopupWindow* Sandbox::createDemControlDialog(void)
 	demVerticalShiftSlider->getSlider()->addNotch(defaultDemVerticalShift);
 	demVerticalShiftSlider->setValue(defaultDemVerticalShift);
 	demVerticalShiftSlider->getValueChangedCallbacks().add(this,&Sandbox::demVerticalShiftSliderCallback);
+	
+	new GLMotif::Label("image",demControlDialog,"Image Orientation Control");
+	
+	GLMotif::Button* rotateImage=new GLMotif::Button("RotateImageButton",demControlDialog,"Rotate Image");
+	rotateImage->getSelectCallbacks().add(this,&Sandbox::rotateImageCallback);
+	
+	GLMotif::Button* flipImageHor=new GLMotif::Button("FlipImageXButton",demControlDialog,"Flip Image Horizontally");
+	flipImageHor->getSelectCallbacks().add(this,&Sandbox::flipImageXCallback);
+	
+	GLMotif::Button* flipImageVer=new GLMotif::Button("FlipImageYButton",demControlDialog,"Flip Image Vertically");
+	flipImageVer->getSelectCallbacks().add(this,&Sandbox::flipImageYCallback);
 	
 	demControlDialog->manageChild();
 	
@@ -681,6 +761,17 @@ void printUsage(void)
 	std::cout<<"  -wts <water grid width> <water grid height>"<<std::endl;
 	std::cout<<"     Sets the width and height of the water flow simulation grid"<<std::endl;
 	std::cout<<"     Default: 640 480"<<std::endl;
+	std::cout<<"  -bwl <base water level>"<<std::endl;
+	std::cout<<"     Enables setting a base water level and sets the base water level in the sandbox"<<std::endl;
+	std::cout<<"     Default: -2.0"<<std::endl;
+	std::cout<<"  -vgr <vegetation growth rate>"<<std::endl;
+	std::cout<<"     Sets the vegetation growth rate. A base water level must be set for the"<<std::endl;
+	std::cout<<"     vegetation simulation to work"<<std::endl;
+	std::cout<<"     Default: 5.0"<<std::endl;
+	std::cout<<"  -vht <vegetation hydration threshold>"<<std::endl;
+	std::cout<<"     Sets the minimum level of hydration for vegetation to grow. A base water"<<std::endl;
+	std::cout<<"     level must be set for the vegetation simulation to work"<<std::endl;
+	std::cout<<"     Default: 0.1"<<std::endl;
 	std::cout<<"  -ws <water speed> <water max steps>"<<std::endl;
 	std::cout<<"     Sets the relative speed of the water simulation and the maximum"<<std::endl;
 	std::cout<<"     number of simulation steps per frame"<<std::endl;
@@ -698,6 +789,9 @@ void printUsage(void)
 	std::cout<<"  -dds <DEM distance scale>"<<std::endl;
 	std::cout<<"     DEM matching distance scale factor in cm"<<std::endl;
 	std::cout<<"     Default: 1.0"<<std::endl;
+	std::cout<<"  -dvs <DEM vertical shift>"<<std::endl;
+	std::cout<<"     DEM matching vertical shift"<<std::endl;
+	std::cout<<"     Default: -3.5"<<std::endl;
 	std::cout<<"  -wi <window index>"<<std::endl;
 	std::cout<<"     Sets the zero-based index of the display window to which the"<<std::endl;
 	std::cout<<"     following rendering settings are applied"<<std::endl;
@@ -718,9 +812,18 @@ void printUsage(void)
 	std::cout<<"  -nhm"<<std::endl;
 	std::cout<<"     Disables elevation color mapping"<<std::endl;
 	std::cout<<"  -uhm [elevation color map file name]"<<std::endl;
-	std::cout<<"     Enables elevation color mapping and loads the elevation color map from"<<std::endl;
-	std::cout<<"     the file of the given name"<<std::endl;
+	std::cout<<"     Enables elevation, slope, and vegetation color mapping."<<std::endl;
+	std::cout<<"     Loads the elevation color map from the file of the given name"<<std::endl;
+	std::cout<<"     and the slope and vegetation color maps from the default files"<<std::endl;
 	std::cout<<"     Default elevation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME<<std::endl;
+	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
+	std::cout<<"     Default vegetation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME<<std::endl;
+	std::cout<<"  -usm [slope color map file name]"<<std::endl;
+	std::cout<<"     Loads the slope color map from the file of the given name"<<std::endl;
+	std::cout<<"     Default slope color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTSLOPECOLORMAPFILENAME<<std::endl;
+	std::cout<<"  -uvm [vegetation color map file name]"<<std::endl;
+	std::cout<<"     Loads the vegetation color map from the file of the given name"<<std::endl;
+	std::cout<<"     Default vegetation color  map file name: "<<CONFIG_CONFIGDIR<<'/'<<CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME<<std::endl;
 	std::cout<<"  -ncl"<<std::endl;
 	std::cout<<"     Disables topographic contour lines"<<std::endl;
 	std::cout<<"  -ucl [contour line spacing]"<<std::endl;
@@ -737,7 +840,6 @@ void printUsage(void)
 	std::cout<<"  -cp <control pipe name>"<<std::endl;
 	std::cout<<"     Sets the name of a named POSIX pipe from which to read control commands"<<std::endl;
 	}
-
 }
 
 Sandbox::Sandbox(int& argc,char**& argv)
@@ -788,7 +890,11 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	Math::Interval<double> rainElevationRange=cfg.retrieveValue<Math::Interval<double> >("./rainElevationRange",Math::Interval<double>(-1000.0,1000.0));
 	rainStrength=cfg.retrieveValue<GLfloat>("./rainStrength",0.25f);
 	double evaporationRate=cfg.retrieveValue<double>("./evaporationRate",0.0);
+	enableBaseWaterLevel=cfg.hasTag("./baseWaterLevel");
 	baseWaterLevel=cfg.retrieveValue<GLfloat>("./baseWaterLevel",-2.0f);
+	flipToolPosition=cfg.retrieveValue<bool>("./flipToolPosition", false);
+	float vegetationGrowthRate=cfg.retrieveValue<GLfloat>("./vegetationGrowthRate",5.0f);
+	float hydrationThreshold=cfg.retrieveValue<GLfloat>("./hydrationThreshold",0.1f);
 	float demDistScale=cfg.retrieveValue<float>("./demDistScale",1.0f);
 	defaultDemVerticalShift=cfg.retrieveValue<float>("./defaultDemVerticalShift",-3.5f);
 	std::string controlPipeName=cfg.retrieveString("./controlPipeName","");
@@ -880,7 +986,22 @@ Sandbox::Sandbox(int& argc,char**& argv)
 			else if(strcasecmp(argv[i]+1,"bwl")==0)
 				{
 				++i;
+				enableBaseWaterLevel=true;
 				baseWaterLevel=GLfloat(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"vgr")==0)
+				{
+				++i;
+				vegetationGrowthRate=GLfloat(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"vht")==0)
+				{
+				++i;
+				hydrationThreshold=GLfloat(atof(argv[i]));
+				}
+			else if(strcasecmp(argv[i]+1,"ftp")==0)
+				{
+				flipToolPosition=true;
 				}
 			else if(strcasecmp(argv[i]+1,"rer")==0)
 				{
@@ -957,8 +1078,12 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					{
 					/* Load the default height color map: */
 					renderSettings.back().loadHeightMap(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
-					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
 					}
+				/* Load the default slope color map: */
+				renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+				
+				/* Load the default vegetation color map: */
+				renderSettings.back().loadVegetationMap(CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME);
 				}
 			else if(strcasecmp(argv[i]+1,"usm")==0)
 				{
@@ -967,6 +1092,25 @@ Sandbox::Sandbox(int& argc,char**& argv)
 					/* Load the slope color map file specified in the next argument: */
 					++i;
 					renderSettings.back().loadSlopeMap(argv[i]);
+					}
+				else
+					{
+					/* Load the default slope color map: */
+					renderSettings.back().loadSlopeMap(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
+					}
+				}
+			else if(strcasecmp(argv[i]+1,"uvm")==0)
+				{
+				if(i+1<argc&&argv[i+1][0]!='-')
+					{
+					/* Load the vegetation color map file specified in the next argument: */
+					++i;
+					renderSettings.back().loadVegetationMap(argv[i]);
+					}
+				else
+					{
+					/* Load the default vegetation color map: */
+					renderSettings.back().loadVegetationMap(CONFIG_DEFAULTVEGETATIONCOLORMAPFILENAME);
 					}
 				}
 			else if(strcasecmp(argv[i]+1,"ncl")==0)
@@ -989,10 +1133,6 @@ Sandbox::Sandbox(int& argc,char**& argv)
 				{
 				++i;
 				renderSettings.back().waterOpacity=GLfloat(atof(argv[i]));
-				}
-			else if(strcasecmp(argv[i]+1,"slp")==0)
-				{
-				renderSettings.back().showSlope=true;
 				}
 			else if(strcasecmp(argv[i]+1,"cp")==0)
 				{
@@ -1122,7 +1262,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 	/* Create the depth image renderer: */
 	depthImageRenderer=new DepthImageRenderer(frameSize);
 	depthImageRenderer->setDepthProjection(cameraIps.depthProjection);
-	depthImageRenderer->setBasePlane(basePlane);
+	bool updateTransform=true;
+	depthImageRenderer->setBasePlane(basePlane, updateTransform);
 	
 	/* Calculate the transformation from camera space to sandbox space: */
 	{
@@ -1148,6 +1289,8 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		waterTable=new WaterTable2(wtSize[0],wtSize[1],depthImageRenderer,basePlaneCorners);
 		waterTable->setElevationRange(elevationRange.getMin(),rainElevationRange.getMax());
 		waterTable->setWaterDeposit(evaporationRate);
+		waterTable->setVegetationGrowth(vegetationGrowthRate);
+		waterTable->setHydrationThreshold(hydrationThreshold);
 
 		/* Set up base water level */
 		if(baseWaterLevelSlider!=0)
@@ -1179,6 +1322,7 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		rsIt->surfaceRenderer->setContourLineDistance(rsIt->contourLineSpacing);
 		rsIt->surfaceRenderer->setElevationColorMap(rsIt->elevationColorMap);
 		rsIt->surfaceRenderer->setSlopeColorMap(rsIt->slopeColorMap);
+		rsIt->surfaceRenderer->setVegetationColorMap(rsIt->vegetationColorMap);
 		rsIt->surfaceRenderer->setIlluminate(rsIt->hillshade);
 		rsIt->surfaceRenderer->setShowSlope(rsIt->showSlope);
 		if(waterTable!=0)
@@ -1217,21 +1361,22 @@ Sandbox::Sandbox(int& argc,char**& argv)
 		{
 		waterControlDialog=createWaterControlDialog();
 		earthquakeControlDialog=createEarthquakeControlDialog();
-		demControlDialog=createDemControlDialog();
 		}
+	demControlDialog=createDemControlDialog();
 	
 	/* Initialize the custom tool classes: */
 	DEMTool::initClass(*Vrui::getToolManager());
 	ImageTool::initClass(*Vrui::getToolManager());
-	SlopeTool::initClass(*Vrui::getToolManager());
+	ColorMapTool::initClass(*Vrui::getToolManager());
 	if(waterTable!=0)
 		{
 		BathymetrySaverTool::initClass(waterTable,*Vrui::getToolManager());
 		EarthquakeTool::initClass(waterTable, earthquakeManager, *Vrui::getToolManager());
 		GlobalWaterTool::initClass(*Vrui::getToolManager());
 		LocalWaterTool::initClass(*Vrui::getToolManager());
-		WaterLevelTool::initClass(*Vrui::getToolManager());
 		AddVegetationTool::initClass(*Vrui::getToolManager());
+		WaterLevelTool::initClass(*Vrui::getToolManager());
+		SlopeTool::initClass(*Vrui::getToolManager());
 		}
 	addEventTool("Pause Topography",0,0);
 	
@@ -1334,10 +1479,7 @@ void Sandbox::frame(void)
 
 	/* Update all color maps: */
 	for(std::vector<RenderSettings>::iterator rsIt=renderSettings.begin();rsIt!=renderSettings.end();++rsIt)
-		{
-	      if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->load(CONFIG_DEFAULTHEIGHTCOLORMAPFILENAME);
-	      if(rsIt->slopeColorMap!=0) rsIt->slopeColorMap->load(CONFIG_DEFAULTSLOPECOLORMAPFILENAME);
-		}
+	      if(rsIt->elevationColorMap!=0) rsIt->elevationColorMap->calcTexturePlane(depthImageRenderer);
 		
 	/* Check if there is a control command on the control pipe: */
 	if(controlPipeFd>=0)
@@ -1388,14 +1530,6 @@ void Sandbox::frame(void)
 					waterTable->setAttenuation(GLfloat(1.0-attenuation));
 				if(waterAttenuationSlider!=0)
 					waterAttenuationSlider->setValue(attenuation);
-				}
-			else if(strcasecmp(command,"baseWaterLevel")==0)
-				{
-				double baseWaterLevel=atof(parameter);
-				if(waterTable!=0)
-					waterTable->setBaseWaterLevel(GLfloat(baseWaterLevel));
-				if(baseWaterLevelSlider!=0)
-					baseWaterLevelSlider->setValue(baseWaterLevel);
 				}
 			else if(strcasecmp(command,"colorMap")==0)
 				{
@@ -1464,7 +1598,6 @@ void Sandbox::display(GLContextData& contextData) const
 			}
 		else {
 			waterTable->updateBathymetry(contextData);
-		
 		}
 		
 		/* Run the water flow simulation's main pass: */
@@ -1478,15 +1611,17 @@ void Sandbox::display(GLContextData& contextData) const
 			totalTimeStep-=timeStep;
 			++numSteps;
 			}
-	
-		/* Run vegetation simulation */
-		waterTable->runVegetationSimulation(contextData);
 		
 		/* Mark the water simulation state as up-to-date for this frame: */
 		dataItem->waterTableTime=Vrui::getApplicationTime();
 		
-		if (waterTable->bathymetryIsInitialized())
+		if (enableBaseWaterLevel && waterTable->bathymetryIsInitialized())
+			{
 			waterTable->setBaseWaterLevel(baseWaterLevel);
+			
+			/* Run vegetation simulation */
+			waterTable->runVegetationSimulation(contextData);
+			}
 		}
 	
 	/* Calculate the projection matrix: */

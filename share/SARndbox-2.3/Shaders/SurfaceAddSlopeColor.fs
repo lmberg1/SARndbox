@@ -1,6 +1,6 @@
 /***********************************************************************
 SurfaceAddSlopeColor - Shader fragment to add slope color
-
+Lauren von Berg 2018
 This file is part of the Augmented Reality Sandbox (SARndbox).
 The Augmented Reality Sandbox is free software; you can redistribute it
 and/or modify it under the terms of the GNU General Public License as
@@ -27,23 +27,5 @@ varying vec2 waterTexCoord;
 void addSlopeColor(in vec2 fragCoord,inout vec4 baseColor)
 	{
 	float slope = texture2DRect(slopeSampler, waterTexCoord).r;
-	slope=min(slope, 0.99);
 	baseColor=texture1D(slopeColorMapSampler,slope);
-	
-	# if 0
-	vec4 color;
-	if (slope < 0.2)
-		color = vec4(255.0/255.0, 255.0/255.0, 255.0/255.0, 1.0);
-	else if (slope < 0.4)
-		color = vec4(255.0/255.0, 200.0/255.0, 200.0/255.0, 1.0);
-	else if (slope < 0.6)
-		color = vec4(255.0/255.0, 100.0/255.0, 150.0/255.0, 1.0);
-	else if (slope < 0.8)
-		color = vec4(255.0/255.0, 50.0/255.0, 100.0/255.0, 1.0);
-	else if (slope < 1.0)
-		color = vec4(255.0/255.0, 0.0/255.0, 0.0/255.0, 1.0);
-	else
-		color = vec4(150.0/255.0, 0.0/255.0, 0.0/255.0, 1.0);
-	baseColor = color;
-	# endif
 	}

@@ -51,8 +51,8 @@ AddVegetationToolFactory* AddVegetationTool::initClass(Vrui::ToolManager& toolMa
 	
 	/* Set up the tool class' input layout: */
 	factory->setNumButtons(2);
-	factory->setButtonFunction(0,"Add");
-	factory->setButtonFunction(1,"Remove");
+	factory->setButtonFunction(0,"Plant Vegetation");
+	factory->setButtonFunction(1,"Kill Vegetation");
 	
 	/* Register and return the class: */
 	toolManager.addClass(factory,Vrui::ToolManager::defaultToolFactoryDestructor);
@@ -99,8 +99,13 @@ void AddVegetationTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::Bu
 	GLfloat waterAmount=application->rainStrength;
 	if(!cbData->newButtonState)
 		waterAmount=-waterAmount;
+	if (buttonSlotIndex==0)
+		application->waterTable->setClearVegetation(false);
 	if(buttonSlotIndex==1)
+		{
 		waterAmount=-waterAmount;
+		application->waterTable->setClearVegetation(true);
+		}
 	adding+=waterAmount;
 	}
 
@@ -119,7 +124,12 @@ void AddVegetationTool::addVegetation(GLContextData& contextData) const
 		
 		/* Get the current vegetation disk position and size in camera coordinates: */
 		Vrui::Point vegetationPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
-		Vrui::Scalar vegetationRadius=Vrui::getPointPickDistance()*Vrui::Scalar(0.5);
+		if (application->flipToolPosition)
+			{
+			vegetationPos[0]=-vegetationPos[0];
+			vegetationPos[1]=-vegetationPos[1];
+			}
+		Vrui::Scalar vegetationRadius=Vrui::getPointPickDistance()*Vrui::Scalar(0.25);
 		
 		/* Render the vegetation disk: */
 		Vrui::Vector z=application->waterTable->getBaseTransform().inverseTransform(Vrui::Vector(0,0,1));
@@ -128,7 +138,6 @@ void AddVegetationTool::addVegetation(GLContextData& contextData) const
 		x*=vegetationRadius/Geometry::mag(x);
 		y*=vegetationRadius/Geometry::mag(y);
 		
-		glVertexAttrib1fARB(1,adding/application->waterSpeed);
 		glBegin(GL_POLYGON);
 		for(int i=0;i<32;++i)
 			{

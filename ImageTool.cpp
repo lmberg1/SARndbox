@@ -122,7 +122,8 @@ void ImageTool::loadImageFile(const char* imageFileName)
 void ImageTool::loadImageFileCallback(GLMotif::FileSelectionDialog::OKCallbackData* cbData)
 	{
 	/* Load the selected Image file: */
-	loadImageFile(cbData->selectedDirectory->getPath(cbData->selectedFileName).c_str());
+	imageFileName=cbData->selectedDirectory->getPath(cbData->selectedFileName);
+	loadImageFile(imageFileName.c_str());
 	}
 
 ImageToolFactory* ImageTool::initClass(Vrui::ToolManager& toolManager)
@@ -184,5 +185,17 @@ void ImageTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCall
 		/* Toggle this Image tool as the active one: */
 		if(!imageFileName.empty())
 			application->toggleImage(this);
+		}
+	}
+	
+void ImageTool::frame(void)
+	{
+	if (!imageFileName.empty())
+		{
+		if (getChangeOrientation())
+			{
+			loadImageFile(imageFileName.c_str());
+			setChangeOrientation(false);
+			}
 		}
 	}

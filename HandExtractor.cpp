@@ -163,7 +163,7 @@ void drawCircle(Images::RGBImage& image,const Point2& center,float radius,const 
 	int cy=int(Math::floor(center[1]));
 	int r=int(Math::floor(radius+0.5f));
 	ptrdiff_t stride=ptrdiff_t(size[0]);
-	#if 0 // Draw a filled rain circle
+	#if 1 // Draw a filled rain circle
 	int ymin=cy-r>=0?cy-r:0;
 	int ymax=cy+r<=size[1]-1?cy+r:size[1]-1;
 	for(int y=ymin;y<=ymax;++y)

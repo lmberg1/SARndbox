@@ -105,6 +105,7 @@ class Sandbox:public Vrui::Application,public GLObject
 		bool useShadows; // Flag whether to use shadows in augmented reality hill shading
 		ElevationColorMap* elevationColorMap; // Pointer to an elevation color map
 		ElevationColorMap* slopeColorMap; // Pointer to an elevation color map
+		ElevationColorMap* vegetationColorMap; // Pointer to an vegetation color map
 		bool useContourLines; // Flag whether to draw elevation contour lines
 		GLfloat contourLineSpacing; // Spacing between adjacent contour lines in cm
 		bool renderWaterSurface; // Flag whether to render the water surface as a geometric surface
@@ -122,7 +123,7 @@ class Sandbox:public Vrui::Application,public GLObject
 		void loadProjectorTransform(const char* projectorTransformName); // Loads a projector transformation from the given file
 		void loadHeightMap(const char* heightMapName); // Loads the selected height map
 		void loadSlopeMap(const char* heightMapName); // Loads the selected height map
-		
+		void loadVegetationMap(const char* heightMapName); // Loads the selected height map
 		};
 	
 	friend class GlobalWaterTool;
@@ -132,6 +133,8 @@ class Sandbox:public Vrui::Application,public GLObject
 	friend class SlopeTool;
 	friend class WaterLevelTool;
 	friend class AddVegetationTool;
+	friend class ColorMapTool;
+	friend class EarthquakeTool;
 	
 	/* Elements: */
 	private:
@@ -151,10 +154,12 @@ class Sandbox:public Vrui::Application,public GLObject
 	unsigned int waterMaxSteps; // Maximum number of water simulation steps per frame
 	GLfloat rainStrength; // Amount of water deposited by rain tools and objects on each water simulation step
 	GLfloat baseWaterLevel; // Base water level in the sandbox
+	bool enableBaseWaterLevel; // Flags whether setting a base water level is enabled
+	bool flipToolPosition; // Flags whether to flip mouse position to its mirror image for local water tool, etc.
 	float defaultDemVerticalShift; // Default vertical shift to apply to DEMs
 	HandExtractor* handExtractor; // Object to detect splayed hands above the sand surface to make rain
 	const AddWaterFunction* addWaterFunction; // Render function registered with the water table
-	bool addWaterFunctionRegistered; // Flag if the water adding function is currently registered with the water table
+	bool addWaterFunctionRegistered; // Flag if the water adding function is currently registered with the water t
 	std::vector<RenderSettings> renderSettings; // List of per-window rendering settings
 	Vrui::Lightsource* sun; // An external fixed light source
 	Vrui::Point navCenter;
@@ -197,6 +202,9 @@ class Sandbox:public Vrui::Application,public GLObject
 	void earthquakeStrengthSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void demVerticalShiftSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
 	void demVerticalScaleSliderCallback(GLMotif::TextFieldSlider::ValueChangedCallbackData* cbData);
+	void rotateImageCallback(Misc::CallbackData* cbData);
+	void flipImageXCallback(Misc::CallbackData* cbData);
+	void flipImageYCallback(Misc::CallbackData* cbData);
 	GLMotif::PopupMenu* createMainMenu(void);
 	GLMotif::PopupWindow* createWaterControlDialog(void);
 	GLMotif::PopupWindow* createEarthquakeControlDialog(void);

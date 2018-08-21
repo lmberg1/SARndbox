@@ -94,26 +94,26 @@ Static elements and functions of class EarthquakeTool:
 EarthquakeToolFactory* EarthquakeTool::factory=0;
 
 /* Calculate distance between two points */
-static double getDistance(int p1[], int p2[]) {
+static double getDistance(Vrui::Point p1, Vrui::Point p2) {
 	return sqrt(pow(p1[0]-p2[0], 2) + pow(p1[1]-p2[1], 2));
 }
 
 /* Returns whether the plane point has been initialized */
-static bool hasPlanePoint(int p[]) {
-	return !(p[0]==0 && p[1]==0 && p[2]==0);
+static bool hasPlanePoint(Vrui::Point p) {
+	return !(p[0]==0.0 && p[1]==0.0 && p[2]==0.0);
 }
 
 /* Determines if the given point is within the given bounds */
-static bool inBounds(int p[], int bounds[]) {
-	return (p[0] >= 0 && p[0] < bounds[0] &&
-	       p[1] >= 0 && p[1] < bounds[1]);
+static bool inBounds(Vrui::Point p, int bounds[]) {
+	return (p[0] >= 0.0 && p[0] < bounds[0] &&
+	       p[1] >= 0.0 && p[1] < bounds[1]);
 }
 
 /*******************************
 Methods of class EarthquakeTool:
 *******************************/
 
-void EarthquakeTool::createCircularPerturbation(int center[], int radius, double perturbation)
+void EarthquakeTool::createCircularPerturbation(OPoint center, int radius, double perturbation)
 	{
 	GLfloat *pPtr = bathymetryBuffer;
 	/* For all pixel columns */
@@ -125,15 +125,16 @@ void EarthquakeTool::createCircularPerturbation(int center[], int radius, double
 			pPtr += factory->gridSize[0];
 			
 			/* Perturb the pixel if it's inside the circle */
-			int p2[2] = {i, j};
+			Vrui::Point p2(i, j);
 			if (getDistance(center, p2) <= radius)
 				*pPtr += perturbation;
 		}
 	}
 	}
 	
-void EarthquakeTool::createPlanarPerturbation(int p1[], int p2[], double perturbation)
+void EarthquakeTool::createPlanarPerturbation(OPoint p1, OPoint p2, double perturbation)
 	{
+	/* Calculate equation of the line that bounds the perturbation */
 	float slope = (p1[1]-p2[1])/((float) p1[0]-p2[0]);
 	float yint = p2[1]-slope*p2[0];
 	
@@ -151,39 +152,9 @@ void EarthquakeTool::createPlanarPerturbation(int p1[], int p2[], double perturb
 			float y = i*slope + yint;
 			if ((p1[1] < p2[1] && j <= y) || (p1[1] > p2[1] && j >= y)) 
 				*pPtr += perturbation;
-			else if (p1[1]==p2[1] && ((p1[0] < p2[0] && j <= y) || (p1[0] > p2[0] && j >= y))) 
-				*pPtr += perturbation;
 		}
 	}
 	}
-	
-int EarthquakeTool::getPixelPos(OPoint p1, const char comp)
-{
-	if (comp == 'x')
-		{
-		/* Average the pixel position calculations for the top and bottom 
-		corners since they might not be in line */
-		double x_top = (p1[0] - basePlaneCorners[1][0])/(basePlaneCorners[0][0] - basePlaneCorners[1][0]);
-		double x_bot = (p1[0] - basePlaneCorners[3][0])/(basePlaneCorners[2][0] - basePlaneCorners[3][0]);
-		double pix_top = x_top * factory->gridSize[0];
-		double pix_bot = x_bot * factory->gridSize[0];
-		int x_pix = round((pix_top + pix_bot)/2);
-		return x_pix;
-		}
-	if (comp == 'y')
-		{
-		/* Average the pixel position calculations for the left and right
-		corners since they might not be in line */
-		double y_left = (p1[1] - basePlaneCorners[3][1])/(basePlaneCorners[1][1] - basePlaneCorners[3][1]);
-		double y_right = (p1[1] - basePlaneCorners[2][1])/(basePlaneCorners[0][1] - basePlaneCorners[2][1]);
-		double pix_left = y_left * factory->gridSize[1];
-		double pix_right = y_right * factory->gridSize[1];
-		int y_pix = round((pix_left + pix_right)/2);
-		return y_pix;
-		}
-	
-	return 0;
-}
 
 EarthquakeToolFactory* EarthquakeTool::initClass(WaterTable2* sWaterTable, EarthquakeManager *sEarthquakeManager, Vrui::ToolManager& toolManager)
 	{	
@@ -198,37 +169,38 @@ EarthquakeToolFactory* EarthquakeTool::initClass(WaterTable2* sWaterTable, Earth
 EarthquakeTool::EarthquakeTool(const Vrui::ToolFactory* factory,const Vrui::ToolInputAssignment& inputAssignment)
 	:Vrui::Tool(factory,inputAssignment),
 	 bathymetryBuffer(new GLfloat[EarthquakeTool::factory->gridSize[1]*EarthquakeTool::factory->gridSize[0]]),
+	 cameraTransform(OGTransform::identity),
 	 requestPending(false), isCircular(false), isPlanar(false)
 	{
-	
-	/* Get the sandbox layout filename */
-	std::string sandboxLayoutFileName=CONFIG_CONFIGDIR;
-	sandboxLayoutFileName.push_back('/');
-	sandboxLayoutFileName.append(CONFIG_DEFAULTBOXLAYOUTFILENAME);
-
-	/* Read the sandbox layout file: */
-	{
-	IO::ValueSource layoutSource(Vrui::openFile(sandboxLayoutFileName.c_str()));
-	layoutSource.skipWs();
-	std::string s=layoutSource.readLine();
-	for(int i = 0; i < 4; ++i)
-		{
-		layoutSource.skipWs();
-		s=layoutSource.readLine();
-		basePlaneCorners[i]=Misc::ValueCoder<OPoint>::decode(s.c_str(),s.c_str()+s.length());
-		}
-	}
-	
 	/* Initialize plane points */
 	for(int i = 0; i < 2; i++) 
-		for (int j = 0; j < 3; j++)
-			planePoints[i][j] = 0;
-		
+		planePoints[i] = OPoint(0.0, 0.0, 0.0);	
 	}
 
 EarthquakeTool::~EarthquakeTool(void)
 	{
 	delete[] bathymetryBuffer;
+	}
+	
+void EarthquakeTool::initialize(void)
+	{
+	/* Calculate the tranformation from camera space to pixel space */
+	Scalar cameraSx=application->frameSize[0];
+	Scalar cameraSy=application->frameSize[1];
+	Scalar boxSx=application->bbox.getSize(0);
+	Scalar boxSy=application->bbox.getSize(1);
+
+	/* Shift the center to the box's center: */
+	OPoint cameraCenter;
+	cameraCenter[0]=cameraSx/2.0;
+	cameraCenter[1]=cameraSy/2.0;
+	cameraCenter[2]=0.0;
+	cameraTransform=OGTransform::translateFromOriginTo(cameraCenter);
+
+	/* Apply appropriate scale: */
+	Scalar scale=Math::min(cameraSx/boxSx,cameraSy/boxSy);
+	cameraTransform*=OGTransform::scale(scale);
+	cameraTransform*=OGTransform(application->boxTransform);
 	}
 
 const Vrui::ToolFactory* EarthquakeTool::getFactory(void) const
@@ -240,51 +212,45 @@ void EarthquakeTool::buttonCallback(int buttonSlotIndex,Vrui::InputDevice::Butto
 	{
 	if(cbData->newButtonState)
 		{
-		/* Request a bathymetry grid from the water table: */
-		requestPending=factory->waterTable->requestBathymetry(bathymetryBuffer);
-			
-		if(buttonSlotIndex==0)
+		if (buttonSlotIndex != 1)
 			{
-			/* Create circular perturbation */
-			isCircular = true;
-			isPlanar = false;
+			/* Request a bathymetry grid from the water table: */
+			requestPending=factory->waterTable->requestBathymetry(bathymetryBuffer);
+		
+			/* Determine if earthquake is circular or planar */
+			if (buttonSlotIndex == 0) isCircular = true;
+			else isCircular = false;
+			isPlanar = !isCircular;
 			}
-		else if (buttonSlotIndex==1)
+		else
 			{
-			isCircular = false;
-			isPlanar = false;
+			isCircular = isPlanar = false;
 			
 			/* Get position of cursor in object space and convert to pixels */
-			OPoint cursorPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
-			int p1[3] = {getPixelPos(cursorPos, 'x'), getPixelPos(cursorPos, 'y'), (int) cursorPos[2]};
+			OPoint cursorPos = Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
+			if (application->flipToolPosition)
+				{
+				cursorPos[0]=-cursorPos[0];
+				cursorPos[1]=-cursorPos[1];
+				}
+			OPoint p1 = cameraTransform.transform(cursorPos);
 			
 			if (!hasPlanePoint(planePoints[0]))
 				{
 				/* Initialize first plane point if not already initialized */
-				for (int i = 0; i < 3; i++)
-					planePoints[0][i] = p1[i];
+				planePoints[0] = OPoint(p1);
 				}
 			else if (!hasPlanePoint(planePoints[1]))
 				{
 				/* Initialize second plane point if not already initialized */
-				for (int i = 0; i < 3; i++)
-					planePoints[1][i] = p1[i];
+				planePoints[1] = OPoint(p1);
 				}
 			else 
 				{
 				/* Update first plane point and reset second plane point */
-				for (int i = 0; i < 3; i++) 
-					{
-					planePoints[0][i] = p1[i];
-					planePoints[1][i] = 0;
-					}
+				planePoints[0] = OPoint(p1);
+				planePoints[1] = OPoint(0.0, 0.0, 0.0);
 				}
-			}
-		else
-			{
-			/* Create planar perturbation */
-			isCircular = false;
-			isPlanar = true;
 			}
 		}
 	}
@@ -297,10 +263,15 @@ void EarthquakeTool::frame(void)
 			{
 			/* Get position of cursor in object space and convert to pixels */
 			OPoint cursorPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
-			int center[2] = {getPixelPos(cursorPos, 'x'), getPixelPos(cursorPos, 'y')};
+			if (application->flipToolPosition)
+				{
+				cursorPos[0]=-cursorPos[0];
+				cursorPos[1]=-cursorPos[1];
+				}
+			OPoint center = cameraTransform.transform(cursorPos);
 		
 			/* Make sure pixel center is in bounds of the box */
-			if (inBounds(center, (factory->gridSize)))
+			if (inBounds(center, factory->gridSize))
 				{
 				/* Get radius and perturbation of earthquake */
 				int radius = factory->earthquakeManager->getEarthquakeRadius();
@@ -312,6 +283,7 @@ void EarthquakeTool::frame(void)
 				/* Set bathymetry grid to updated bathymetry buffer */
 				factory->earthquakeManager->setBathymetryGrid(bathymetryBuffer);
 				}
+			requestPending=false;
 			}
 		else if (isPlanar)
 			{
@@ -328,7 +300,7 @@ void EarthquakeTool::frame(void)
 				/* Set bathymetry grid to updated bathymetry buffer */
 				factory->earthquakeManager->setBathymetryGrid(bathymetryBuffer);
 				}
+			requestPending=false;
 			}
-		requestPending=false;
 		}
 	}

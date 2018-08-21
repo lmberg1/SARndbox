@@ -1,5 +1,5 @@
 /***********************************************************************
-ImageTool - Tool class to load an image into an augmented
+ColorMapTool - Tool class to shift color map in an augmented
 reality sandbox.
 Copyright (c) 2013-2016 Oliver Kreylos
 
@@ -20,34 +20,26 @@ with the Augmented Reality Sandbox; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ***********************************************************************/
 
-#ifndef IMAGETOOL_INCLUDED
-#define IMAGETOOL_INCLUDED
+#ifndef COLORMAPTOOL_INCLUDED
+#define COLORMAPTOOL_INCLUDED
 
-#include <string>
-#include <GL/gl.h>
-#include <GL/GLObject.h>
-#include <GLMotif/FileSelectionHelper.h>
 #include <Vrui/Tool.h>
 #include <Vrui/Application.h>
 
 #include "Types.h"
-#include "Image.h"
 
 /* Forward declarations: */
 class Sandbox;
-class ImageTool;
+class ColorMapTool;
 
-class ImageToolFactory:public Vrui::ToolFactory
+class ColorMapToolFactory:public Vrui::ToolFactory
 	{
-	friend class ImageTool;
-	/* Elements: */
-	private:
-	GLMotif::FileSelectionHelper imageSelectionHelper; // Helper object to load images from files
+	friend class ColorMapTool;
 	
 	/* Constructors and destructors: */
 	public:
-	ImageToolFactory(Vrui::ToolManager& toolManager);
-	virtual ~ImageToolFactory(void);
+	ColorMapToolFactory(Vrui::ToolManager& toolManager);
+	virtual ~ColorMapToolFactory(void);
 	
 	/* Methods from Vrui::ToolFactory: */
 	virtual const char* getName(void) const;
@@ -56,33 +48,23 @@ class ImageToolFactory:public Vrui::ToolFactory
 	virtual void destroyTool(Vrui::Tool* tool) const;
 	};
 
-class ImageTool:public Image,public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
+class ColorMapTool:public Vrui::Tool,public Vrui::Application::Tool<Sandbox>
 	{
-	friend class ImageToolFactory;
+	friend class ColorMapToolFactory;
 	
 	/* Elements: */
 	private:
-	static ImageToolFactory* factory; // Pointer to the factory object for this class
-	std::string imageFileName; // Name of image file to load
-	OGTransform imageTransform; // The transformation to apply to the image
-	
-	/* Private methods: */
-	void loadImageFile(const char* imageFileName); // Loads an image from a file
-	void loadImageFileCallback(GLMotif::FileSelectionDialog::OKCallbackData* cbData); // Called when the user selects an image to load
+	static ColorMapToolFactory* factory; // Pointer to the factory object for this class
 	
 	/* Constructors and destructors: */
 	public:
-	static ImageToolFactory* initClass(Vrui::ToolManager& toolManager);
-	ImageTool(const Vrui::ToolFactory* factory,const Vrui::ToolInputAssignment& inputAssignment);
-	virtual ~ImageTool(void);
+	static ColorMapToolFactory* initClass(Vrui::ToolManager& toolManager);
+	ColorMapTool(const Vrui::ToolFactory* factory,const Vrui::ToolInputAssignment& inputAssignment);
+	virtual ~ColorMapTool(void);
 	
 	/* Methods from class Vrui::Tool: */
-	virtual void configure(const Misc::ConfigurationFileSection& configFileSection);
-	virtual void storeState(Misc::ConfigurationFileSection& configFileSection) const;
-	virtual void initialize(void);
 	virtual const Vrui::ToolFactory* getFactory(void) const;
 	virtual void buttonCallback(int buttonSlotIndex,Vrui::InputDevice::ButtonCallbackData* cbData);
-	virtual void frame(void);
 	};
 
 #endif

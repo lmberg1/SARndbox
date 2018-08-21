@@ -120,6 +120,11 @@ void LocalWaterTool::glRenderActionTransparent(GLContextData& contextData) const
 	
 	/* Get the current rain disk position and size in camera coordinates: */
 	Vrui::Point rainPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
+	if (application->flipToolPosition)
+		{
+		rainPos[0]=-rainPos[0];
+		rainPos[1]=-rainPos[1];
+		}
 	Vrui::Scalar rainRadius=Vrui::getPointPickDistance()*Vrui::Scalar(3);
 	
 	/* Construct the rain cylinder: */
@@ -178,6 +183,11 @@ void LocalWaterTool::addWater(GLContextData& contextData) const
 		
 		/* Get the current rain disk position and size in camera coordinates: */
 		Vrui::Point rainPos=Vrui::getInverseNavigationTransformation().transform(getButtonDevicePosition(0));
+		if (application->flipToolPosition)
+			{
+			rainPos[0]=-rainPos[0];
+			rainPos[1]=-rainPos[1];
+			}
 		Vrui::Scalar rainRadius=Vrui::getPointPickDistance()*Vrui::Scalar(3);
 		
 		/* Render the rain disk: */

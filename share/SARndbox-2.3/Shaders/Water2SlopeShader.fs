@@ -60,7 +60,7 @@ void main()
 	/* Calculate the y-direction slope: */
 	float slopeY=slope(b0, b2, b4, cellSize.y);
 	
-	float maxSlope=max(slopeX, slopeY);
+	float totalSlope=sqrt(pow(slopeX, 2.0) + pow(slopeY, 2.0));
 	
-	gl_FragColor=vec4(maxSlope, 0.0, 0.0, 0.0);
+	gl_FragColor=vec4(totalSlope, 0.0, 0.0, 0.0);
 	}

@@ -164,20 +164,25 @@ void DepthImageRenderer::setDepthProjection(const PTransform& newDepthProjection
 		weightDicEq[i]=GLfloat(depthProjection.getMatrix()(3,i));
 	
 	/* Recalculate the base plane equation in depth image space: */
-	setBasePlane(basePlane);
+	bool updateTransform = true;
+	setBasePlane(basePlane, updateTransform);
 	}
 
-void DepthImageRenderer::setBasePlane(const Plane& newBasePlane)
+void DepthImageRenderer::setBasePlane(const Plane& newBasePlane, bool updateTransform)
 	{
 	/* Set the base plane: */
 	basePlane=newBasePlane;
 	
 	/* Transform the base plane to depth image space and into a GLSL-compatible format: */
-	const PTransform::Matrix& dpm=depthProjection.getMatrix();
-	const Plane::Vector& bpn=basePlane.getNormal();
-	Scalar bpo=basePlane.getOffset();
-	for(int i=0;i<4;++i)
-		basePlaneDicEq[i]=GLfloat(dpm(0,i)*bpn[0]+dpm(1,i)*bpn[1]+dpm(2,i)*bpn[2]-dpm(3,i)*bpo);
+	if (updateTransform)
+		{
+		const PTransform::Matrix& dpm=depthProjection.getMatrix();
+		const Plane::Vector& bpn=basePlane.getNormal();
+		Scalar bpo=basePlane.getOffset();
+		for(int i=0;i<4;++i)
+			basePlaneDicEq[i]=GLfloat(dpm(0,i)*bpn[0]+dpm(1,i)*bpn[1]+dpm(2,i)*bpn[2]-dpm(3,i)*bpo);
+			
+		}
 	}
 
 void DepthImageRenderer::setDepthImage(const Kinect::FrameBuffer& newDepthImage)
