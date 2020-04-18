@@ -17,6 +17,12 @@ INSTRUCTIONS
 6) Make the SARndbox: make
 7) Have fun with the new features!
 
+![Satellite Overlay](https://github.com/lmberg1/SARndbox/tree/master/scripts/Australia_overlay.jpg)
+
+![Slope Map](https://github.com/lmberg1/SARndbox/tree/master/scripts/Slope_map.jpg)
+
+![Vegetation Simulation](https://github.com/lmberg1/SARndbox/tree/master/scripts/Vegetation.png)
+
 NEW FEATURES
 1) Display an image on the sandbox with the 'Show Image' tool: 
    	Images can be any size, but should be 640x480 pixels to fit the sandbox.
