@@ -1,4 +1,4 @@
-INSTRUCTIONS
+## INSTRUCTIONS
 1) Download the updated SARndbox code from github: https://github.com/lmberg1/SARndbox
    and extract it to your ~/src/ directory. You can rename the directory to whatever
    you want, but make sure to update Config.h, SARndbox.cfg, and scripts/weather.sh 
@@ -17,13 +17,7 @@ INSTRUCTIONS
 6) Make the SARndbox: make
 7) Have fun with the new features!
 
-![Satellite Overlay](https://github.com/lmberg1/SARndbox/tree/master/scripts/Australia_overlay.jpg)
-
-![Slope Map](https://github.com/lmberg1/SARndbox/tree/master/scripts/Slope_map.jpg)
-
-![Vegetation Simulation](https://github.com/lmberg1/SARndbox/tree/master/scripts/Vegetation.png)
-
-NEW FEATURES
+## NEW FEATURES
 1) Display an image on the sandbox with the 'Show Image' tool: 
    	Images can be any size, but should be 640x480 pixels to fit the sandbox.
       Currently, the image tool will accept .jpg, .png, and .tif file extensions. 
@@ -38,6 +32,8 @@ NEW FEATURES
       Some example images are in the locations/ directory. These should match the
       DEMs with the corresponding names, so you can recreate a DEM and then add
       the satellite image on top when you are finished. 
+      
+      ![Satellite Overlay](Australia_overlay.jpg)
 2) Set a base water level:
 	Use the -bwl command line argument to set a base water level in the sandbox. 
 	You can then use the 'Manage Water Level' tool to increase or decrease this 
@@ -76,6 +72,8 @@ NEW FEATURES
 	point above the base water level. You can specify the hydration threshold 
 	for vegetation to grow with the -vht command line argument. You can also 
 	alter the rate of vegetation growth with the -vgr command line argument.  
+	
+	![Vegetation Simulation](Vegetation.png)
 5) Show a slope map with the 'Show Slope' tool:
 	This tool toggles a view of slope color mapping, meaning that the sand colors
 	will be based on the slope of the sand instead of the height. The mapping
@@ -84,6 +82,8 @@ NEW FEATURES
 	The slope color mapping will automatically be set from the slope map file 
 	specified in Config.h. You can change which color map is loaded by using 
 	the -usm command line argument. 
+	
+	![Slope Map](Slope_map.jpg)
 6) Easier DEM matching:
 	After loading a .grid file into the sandbox, open the 'Show DEM Control' 
 	section of the main menu and change the values of the sliders to help adjust
@@ -103,7 +103,7 @@ NEW FEATURES
 	use this to simulate changing the sea level without adding actual water into 
 	the sandbox such as with the -bwl command. 
 
-SCRIPTS
+## SCRIPTS
 weather.sh: 
 	Choose the weather values which should be cycled through by modifying the 
 	weather array.
