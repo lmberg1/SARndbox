@@ -33,7 +33,7 @@
       DEMs with the corresponding names, so you can recreate a DEM and then add
       the satellite image on top when you are finished. 
       
-      ![Satellite Overlay](Australia_overlay.jpg)
+      ![Satellite Overlay](scripts/Australia_overlay.jpg)
 2) Set a base water level:
 	Use the -bwl command line argument to set a base water level in the sandbox. 
 	You can then use the 'Manage Water Level' tool to increase or decrease this 
@@ -73,7 +73,7 @@
 	for vegetation to grow with the -vht command line argument. You can also 
 	alter the rate of vegetation growth with the -vgr command line argument.  
 	
-	![Vegetation Simulation](Vegetation.png)
+	![Vegetation Simulation](scripts/Vegetation.png)
 5) Show a slope map with the 'Show Slope' tool:
 	This tool toggles a view of slope color mapping, meaning that the sand colors
 	will be based on the slope of the sand instead of the height. The mapping
@@ -83,7 +83,7 @@
 	specified in Config.h. You can change which color map is loaded by using 
 	the -usm command line argument. 
 	
-	![Slope Map](Slope_map.jpg)
+	![Slope Map](scripts/Slope_map.jpg)
 6) Easier DEM matching:
 	After loading a .grid file into the sandbox, open the 'Show DEM Control' 
 	section of the main menu and change the values of the sliders to help adjust
